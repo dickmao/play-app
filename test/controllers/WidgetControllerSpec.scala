@@ -13,7 +13,7 @@ class WidgetControllerSpec extends PlaySpec with GuiceOneAppPerSuite {
 
   "Post Request" should {
     "should result in redirect" in {
-      val request = FakeRequest("POST", "/widgets").withFormUrlEncodedBody("name" -> "Widget 5", "price" -> "5")
+      val request = FakeRequest("POST", "/widgets").withFormUrlEncodedBody("bedrooms" -> "0", "rentlo" -> "$100", "renthi" -> "$200", "autocomplete" -> "Astoria, Queens")
 
       val Some(result) = route(app, request)
       status(result) mustEqual SEE_OTHER

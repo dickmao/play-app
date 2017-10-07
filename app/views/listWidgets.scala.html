@@ -1,26 +1,26 @@
-@(widgets: Seq[Widget], form: Form[WidgetForm.Data], postUrl: Call)(implicit request: RequestHeader, messages: Messages)
+@(form: Form[WidgetForm.Data], postUrl: Call, checkbeds: Seq[WidgetForm.CheckBeds])(implicit request: RequestHeader, messages: Messages)
+
+@import views.minimal._
+@fc_check = @{ helper.FieldConstructor(minimal.checkboxGroupFieldConstructor.f) }
+@fc_price = @{ helper.FieldConstructor(minimal.priceFieldConstructor.f) }
 
 @main("Widgets") {
+  <script type="text/javascript">
+    function numberWithCommas(x) {
+        var xparts = x.toString().split(".");
+        parts[0] = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+        return parts.join(".");
+    }
 
-  <h1>Widgets</h1>
+    function reformat(obj) {
+      obj.value = `\$${ numberWithCommas(Math.floor(obj.value.replace(/[^\d\.]/g, '')))}`
+    }
+  </script>
 
   @* Flash shows updates to a page *@
-  @request.flash.data.map{ case (name, value) =>
-    <div class="@name">@value</div>
+  @request.flash.data.map{ case (foo, bar) =>
+    <div class=@foo>@bar</div>
   }
-
-  <table>
-    <thead>
-      <tr><th>Name</th><th>Price</th>
-    </thead>
-    <tbody>
-    @for(w <- widgets) {
-      <tr><td>@w.name</td><td>@w.price</td></tr>
-    }
-    </tbody>
-  </table>
-
-  <hr/>
 
   @* Global errors are not tied to any particular form field *@
   @if(form.hasGlobalErrors) {
@@ -34,11 +34,30 @@
   @helper.form(postUrl) {
     @helper.CSRF.formField
 
-    @helper.inputText(form("name"))
+    Rent between
+    @minimal.inputText(field = form("rentlo").copy(value=Some("$500")))(handler = fc_check, implicitly[Messages])
+    and     
+    @minimal.inputText(field = form("renthi").copy(value=Some("$4000")))(handler = fc_check, implicitly[Messages])
+    in 
+    @minimal.inputPlace(field = form("autocomplete"), args = 'placeholder -> "e.g., Astoria")(handler = fc_check, implicitly[Messages])
+    <script>
+      var autocomplete;
+      function initMap() {
+         autocomplete = new google.maps.places.Autocomplete(
+             /** @@type {!HTMLInputElement} */ (
+                 document.getElementById('autocomplete')), {
+               componentRestrictions: {'country': 'us'}
+             });
+      }
+    </script>
 
-    @helper.inputText(form("price"))
+    <script type="text/javascript" src="https://maps.googleapis.com/maps/api/js?key=AIzaSyD5GTvU9JpZKsh9XyAVKNVNdUlo5BZnXNQ&libraries=places&callback=initMap" async defer></script>
 
-    <button>Create widget</button>
+    @minimal.inputCheckboxGroup(form("checkbeds"), options = checkbeds.map(g => g.value.toString -> g.name))(handler = fc_check, implicitly[Messages])
+
+    <button>Update</button>
+    <hr/>
+
   }
 
 }

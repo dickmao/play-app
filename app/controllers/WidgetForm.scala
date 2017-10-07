@@ -10,7 +10,7 @@ object WidgetForm {
    * Using a class specifically for form binding reduces the chances
    * of a parameter tampering attack and makes code clearer.
    */
-  case class Data(name: String, price: Int)
+  case class Data(bedrooms: Int, rentlo: Option[String], renthi: Option[String], autocomplete: String)
 
   /**
    * The form definition for the "create a widget" form.
@@ -19,9 +19,15 @@ object WidgetForm {
    */
   val form = Form(
     mapping(
-      "name" -> nonEmptyText,
-      "price" -> number(min = 0)
+      "bedrooms" -> number(min = 0),
+      "rentlo" -> optional(text),
+      "renthi" -> optional(text),
+      "autocomplete" -> nonEmptyText
     )(Data.apply)(Data.unapply)
   )
+
+  case class CheckBeds(value: Int, name: String)
+  val checkbeds = Seq(CheckBeds(0, "0-1BR"), CheckBeds(1, "2BR+"))
+ 
 }
 

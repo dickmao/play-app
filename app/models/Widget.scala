@@ -7,4 +7,10 @@ package models
  * which are used for reads, distinct from the form processing DTO,
  * which are used for writes.
  */
-case class Widget(name: String, price: Int)
+case class Widget(bedrooms: Int, rentlo: Int, renthi: Int, place: String)
+{
+}
+
+object Widget {
+  val TooDear = "$7000"
+}
