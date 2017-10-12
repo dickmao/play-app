@@ -1,10 +1,10 @@
-@(form: Form[WidgetForm.Data], postUrl: Call, checkbeds: Seq[WidgetForm.CheckBeds])(implicit request: RequestHeader, messages: Messages)
+@(form: Form[WidgetForm.Data], postUrl: Call, checkbeds: Seq[WidgetForm.CheckBeds], configuration: play.api.Configuration, links: Seq[String])(implicit request: RequestHeader, messages: Messages)
 
 @import views.minimal._
 @fc_check = @{ helper.FieldConstructor(minimal.checkboxGroupFieldConstructor.f) }
 @fc_price = @{ helper.FieldConstructor(minimal.priceFieldConstructor.f) }
 
-@main("Widgets") {
+@main("Kiosk") {
   <script type="text/javascript">
     function numberWithCommas(x) {
         var xparts = x.toString().split(".");
@@ -51,13 +51,16 @@
       }
     </script>
 
-    <script type="text/javascript" src="https://maps.googleapis.com/maps/api/js?key=AIzaSyD5GTvU9JpZKsh9XyAVKNVNdUlo5BZnXNQ&libraries=places&callback=initMap" async defer></script>
+    <script type="text/javascript" src="https://maps.googleapis.com/maps/api/js?key=@configuration.getString("googleapi.key")&libraries=places&callback=initMap" async defer></script>
 
     @minimal.inputCheckboxGroup(form("checkbeds"), options = checkbeds.map(g => g.value.toString -> g.name))(handler = fc_check, implicitly[Messages])
 
     <button>Update</button>
     <hr/>
-
+    
+    @for(l <- links) {
+      <p>@l
+    }
   }
 
 }
