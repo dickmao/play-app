@@ -1088,9 +1088,14 @@ textarea {
   line-height: inherit;
 }
 a {
-  color: #337ab7;
+  color: #4169e1;
   text-decoration: none;
 }
+
+a:visited {
+  color: #666633;
+}
+
 a:hover,
 a:focus {
   color: #23527c;
@@ -6774,3 +6779,10 @@ button.close {
   }
 }
 /*# sourceMappingURL=bootstrap.css.map */
+
+.autocomplete-suggestions { border: 1px solid #999; background: #FFF; overflow: auto; }
+.autocomplete-suggestion { padding: 2px 5px; white-space: nowrap; overflow: hidden; }
+.autocomplete-selected { background: #F0F0F0; }
+.autocomplete-suggestions strong { font-weight: normal; color: #3399FF; }
+.autocomplete-group { padding: 2px 5px; }
+.autocomplete-group strong { display: block; border-bottom: 1px solid #000; }

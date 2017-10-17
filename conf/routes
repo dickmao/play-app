@@ -7,6 +7,8 @@ GET     /                           controllers.WidgetController.index
 
 # Widgets
 GET     /widgets                    controllers.WidgetController.Display
+GET     /javascriptRoutes           controllers.WidgetController.javascriptRoutes
+GET     /autocomplete               controllers.WidgetController.fetch
 POST    /widgets                    controllers.WidgetController.Update
 
 # Map static resources from the /public folder to the /assets URL path

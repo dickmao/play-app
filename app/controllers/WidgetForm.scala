@@ -1,6 +1,8 @@
 package controllers
 import play.api.data.Forms._
 import play.api.data.Form
+import geocode._
+import com.redis._
 
 object WidgetForm {
 
@@ -18,16 +20,20 @@ object WidgetForm {
    * It specifies the form fields and their types,
    * as well as how to convert from a Data to form data and vice versa.
    */
-  val form = Form(
+  var form = Form(
     mapping(
       "checkbeds" -> list(number(min=0)),
       "rentlo" -> optional(text),
       "renthi" -> optional(text),
       "autocomplete" -> nonEmptyText
-    )(Data.apply)(Data.unapply)).fill(WidgetForm.Data(List(0), None, None, ""))
+    )(Data.apply)(Data.unapply)).fill(WidgetForm.Data(List(0), Some("$500"), Some("$4,000"), ""))
 
   case class CheckBeds(value: Int, name: String)
   val checkbeds = Seq(CheckBeds(0, "0-1BR"), CheckBeds(2, "2BR+"))
- 
+
+  val nyp = new ReverseGeoCode(new java.io.FileInputStream("/home/dick/scrapy/NY.P.tsv"), true)
+
+  val redisClient = new RedisClient("localhost", 6379)
+
 }
 
