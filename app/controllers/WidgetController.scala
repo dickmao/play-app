@@ -12,6 +12,7 @@ import play.api.{ Configuration, Environment }
 import play.api.routing._
 import scala.collection.immutable._
 import com.github.nscala_time.time.Imports._
+import org.joda.time.format.ISODateTimeFormat
 
 /**
  * The classic WidgetController using I18nSupport.
@@ -34,9 +35,15 @@ class WidgetController @Inject() (environment: play.api.Environment, configurati
     Ok(views.html.listWidgets(form, postUrl, checkbeds, configuration, links, titles))
   }
 
+  def popmax(id1: String, id2: String) : String = {
+    val f1 = redisClient.hmget("geoitem." + id1, "featureclass", "featurecode", "population").get
+    val f2 = redisClient.hmget("geoitem." + id2, "featureclass", "featurecode", "population").get
+    return if (f1("population").toInt > f2("population").toInt) id1 else id2
+  }
+
   def fetch = Action { implicit request: Request[AnyContent] => 
     val prefix = request.getQueryString("query").get.toLowerCase()
-    val names = redisClient.zrangebylex("geoitem.index.name", "[%s".format(prefix), "(%s{".format(prefix), Some((0,5))).getOrElse(List())
+    val names = redisClient.zrangebylex("geoitem.index.name", "[%s".format(prefix), "(%s{".format(prefix), Some((0,5))).getOrElse(List()).sortBy(x => redisClient.hget("geoitem." + redisClient.smembers("georitem." + x.split(":")(1)).get.flatten.reduceLeft(popmax), "population").get.toInt)(Ordering[Int].reverse)
     Ok(Json.toJson(Map("suggestions" -> names.map(_.split(":")(1)))))
   }
 
@@ -67,22 +74,21 @@ class WidgetController @Inject() (environment: play.api.Environment, configurati
       val matches = redisClient.zrangebylex("geoitem.index.name", "[%s".format(data.autocomplete.toLowerCase), "(%s{".format(data.autocomplete.toLowerCase), None).getOrElse(List[String]())
       val geonameids = matches.flatMap(mat => redisClient.smembers("georitem." + mat.split(":")(1)).getOrElse(Set())).flatten
 
-      def max(id1: String, id2: String) : String = {
-        val f1 = redisClient.hmget("geoitem." + id1, "featureclass", "featurecode", "population").get
-        val f2 = redisClient.hmget("geoitem." + id2, "featureclass", "featurecode", "population").get
-        return if (f1("population").toInt > f2("population").toInt) id1 else id2
-      }
-
-      val p0 = geonameids.reduceLeft(max)
-      val p0_fields = redisClient.hmget("geoitem." + p0, "longitude", "latitude", "admin2code").get
-      val proximate = redisClient.georadius("item.geohash.coords", p0_fields("longitude"), p0_fields("latitude"), 1.5, "km", true, false, false, None, None, None, None).getOrElse(List()).flatten
-      val pn = nyp.nearestPlace(p0_fields("latitude").toDouble, p0_fields("longitude").toDouble).id
-      val proximate_and_colocal = proximate.filter(p1 => p0_fields("admin2code") == redisClient.hget("geoitem." + nyp.nearestPlace(p1.coords.get._2.toDouble, p1.coords.get._1.toDouble).id, "admin2code").get)
-      val intersect = byprice.toSet.intersect(bybeds.toSet).intersect(proximate_and_colocal.map(x => x.member.get).toSet)
-      links.clear()
-      links ++= intersect.toList.map(x => redisClient.hget("item." + x, "link").get)
       titles.clear()
-      titles ++= intersect.toList.map(x => redisClient.hget("item." + x, "title").get)
+      links.clear()
+      if (!geonameids.isEmpty) {
+        val p0 = geonameids.reduceLeft(popmax)
+        val p0_fields = redisClient.hmget("geoitem." + p0, "longitude", "latitude", "admin2code", "featurecode").get
+        val dist = if (p0_fields("featurecode").matches("PPLA.*")) 25 else 1.5
+        val proximate = redisClient.georadius("item.geohash.coords", p0_fields("longitude"), p0_fields("latitude"), dist, "km", true, false, false, None, None, None, None).getOrElse(List()).flatten
+        val pn = nyp.nearestPlace(p0_fields("latitude").toDouble, p0_fields("longitude").toDouble).id
+        val proximate_and_colocal = proximate.filter(p1 => p0_fields("admin2code") == redisClient.hget("geoitem." + nyp.nearestPlace(p1.coords.get._2.toDouble, p1.coords.get._1.toDouble).id, "admin2code").get)
+        val intersect = byprice.toSet.intersect(bybeds.toSet).intersect(proximate_and_colocal.map(x => x.member.get).toSet)
+        val latestFirst = intersect.toList.sortBy(x => ISODateTimeFormat.dateTimeParser().parseDateTime(redisClient.hget("item." + x, "posted").get))(DateTimeOrdering.reverse)
+
+        links ++= latestFirst.map(x => redisClient.hget("item." + x, "link").get)
+        titles ++= latestFirst.map(x => redisClient.hget("item." + x, "title").get)
+      }
       Redirect(routes.WidgetController.Display())
     }
 

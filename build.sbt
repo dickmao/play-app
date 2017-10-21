@@ -1,11 +1,13 @@
-name := """play-scala-forms-example"""
+name := """play-app"""
 
-val vversion = "2.5.x"
-version := vversion
 scalaVersion := "2.11.11"
 
-lazy val gitRepo = s"git:file:///home/dick/playframework/#$vversion" 
-lazy val g = RootProject(uri(gitRepo))
+// removes all jar mappings in universal and appends the fat jar
+// universalMappings: Seq[(File,String)]
+mappings in Universal := (mappings in Universal).value filter {
+  case (file, name) =>  ! name.startsWith("share/doc")
+}
+
 resolvers += Resolver.mavenLocal
 libraryDependencies ++= Seq(
   filters,
@@ -35,3 +37,24 @@ initialCommands := """
 |}
 """.stripMargin
 
+javaOptions in Universal ++= Seq(
+  // JVM memory tuning
+  "-J-Xmx1024m",
+  "-J-Xms512m",
+
+  // Since play uses separate pidfile we have to provide it with a proper path
+  // name of the pid file must be play.pid
+  s"-Dpidfile.path=/var/run/${packageName.value}/play.pid",
+
+  // alternative, you can remove the PID file
+  // s"-Dpidfile.path=/dev/null",
+
+  // Use separate configuration file for production environment
+  s"-Dconfig.file=/usr/share/${packageName.value}/conf/production.conf",
+
+  // Use separate logger configuration file for production environment
+  s"-Dlogger.file=/usr/share/${packageName.value}/conf/production-logger.xml",
+
+  // You may also want to include this setting if you use play evolutions
+  "-DapplyEvolutions.default=true"
+)
