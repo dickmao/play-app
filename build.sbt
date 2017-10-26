@@ -1,12 +1,48 @@
 name := """play-app"""
 
 scalaVersion := "2.11.11"
+dockerRepository := Some("303634175659.dkr.ecr.us-east-2.amazonaws.com")
+dockerExposedPorts := Seq(9000)
 
-// removes all jar mappings in universal and appends the fat jar
-// universalMappings: Seq[(File,String)]
+lazy val playStageSecret = taskKey[Unit]("Runs playGenerateSecret and puts output in conf as production.conf")
+
+playStageSecret := {
+  import play.sbt.PlayImport._
+  val result = PlayKeys.generateSecret.value
+  val file = baseDirectory.value / "conf" / "production.conf"
+  IO.write(file, s"""include "application.conf"\nplay.crypto.secret="$result"\n""")
+}
+
+lazy val removeOldImage = taskKey[Unit]("Remove old image to avoid danglers")
+
+removeOldImage := {
+  Keys.streams.value.log.info("Removing old " + (dockerTarget in Docker).value)
+  Process(Seq("docker", "rmi", (dockerTarget in Docker).value)) ! new ProcessLogger {
+    def error(err: => String) = err match {
+      case s if s.contains("No such image") => Keys.streams.value.log.info("Pristine")
+      case s                                =>
+    }
+    def info(inf: => String) = inf match {
+      case s                                =>
+    }
+    def buffer[T](f: => T) = f
+  }
+
+}
+
+publishLocal in Docker := {
+  val _ = (playStageSecret.value, removeOldImage.value)
+  (publishLocal in Docker).value
+}
+
+// generate application secret on every docker:publish
+// find docker:publish and append a command to it
+// removes doc mappings
 mappings in Universal := (mappings in Universal).value filter {
   case (file, name) =>  ! name.startsWith("share/doc")
 }
+
+
 
 resolvers += Resolver.mavenLocal
 libraryDependencies ++= Seq(
@@ -22,6 +58,8 @@ libraryDependencies ++= Seq(
 )
 
 lazy val root = (project in file(".")).enablePlugins(PlayScala)
+
+
 
 initialCommands := """
 |import com.redis._
@@ -41,20 +79,7 @@ javaOptions in Universal ++= Seq(
   // JVM memory tuning
   "-J-Xmx1024m",
   "-J-Xms512m",
-
-  // Since play uses separate pidfile we have to provide it with a proper path
-  // name of the pid file must be play.pid
-  s"-Dpidfile.path=/var/run/${packageName.value}/play.pid",
-
-  // alternative, you can remove the PID file
-  // s"-Dpidfile.path=/dev/null",
-
-  // Use separate configuration file for production environment
-  s"-Dconfig.file=/usr/share/${packageName.value}/conf/production.conf",
-
-  // Use separate logger configuration file for production environment
-  s"-Dlogger.file=/usr/share/${packageName.value}/conf/production-logger.xml",
-
+  s"-Dconfig.file=conf/production.conf",
   // You may also want to include this setting if you use play evolutions
   "-DapplyEvolutions.default=true"
 )

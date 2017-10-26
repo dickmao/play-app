@@ -1,4 +1,5 @@
+addSbtPlugin("io.get-coursier" % "sbt-coursier" % "1.0.0-RC11")
 addSbtPlugin("com.typesafe.play" % "sbt-plugin" % "2.5.16")
 addSbtPlugin("com.typesafe.sbt" % "sbt-play-enhancer" % "1.1.0")
 addSbtPlugin("com.artima.supersafe" % "sbtplugin" % "1.1.2")
-
+addSbtPlugin("net.virtual-void" % "sbt-dependency-graph" % "0.9.0")
