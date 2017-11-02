@@ -13,6 +13,7 @@ import play.api.routing._
 import scala.collection.immutable._
 import com.github.nscala_time.time.Imports._
 import org.joda.time.format.ISODateTimeFormat
+import geocode._
 
 /**
  * The classic WidgetController using I18nSupport.
@@ -36,14 +37,22 @@ class WidgetController @Inject() (environment: play.api.Environment, configurati
   }
 
   def popmax(id1: String, id2: String) : String = {
-    val f1 = redisClient.hmget("geoitem." + id1, "featureclass", "featurecode", "population").get
-    val f2 = redisClient.hmget("geoitem." + id2, "featureclass", "featurecode", "population").get
+    val f1 = rediscp.withClient {
+      _.hmget("geoitem." + id1, "featureclass", "featurecode", "population").get
+    }
+    val f2 = rediscp.withClient {
+      _.hmget("geoitem." + id2, "featureclass", "featurecode", "population").get
+    }
     return if (f1("population").toInt > f2("population").toInt) id1 else id2
   }
 
   def fetch = Action { implicit request: Request[AnyContent] => 
     val prefix = request.getQueryString("query").get.toLowerCase()
-    val names = redisClient.zrangebylex("geoitem.index.name", "[%s".format(prefix), "(%s{".format(prefix), Some((0,5))).getOrElse(List()).sortBy(x => redisClient.hget("geoitem." + redisClient.smembers("georitem." + x.split(":")(1)).get.flatten.reduceLeft(popmax), "population").get.toInt)(Ordering[Int].reverse)
+    val names = rediscp.withClient {
+      client => {
+        client.zrangebylex("geoitem.index.name", "[%s".format(prefix), "(%s{".format(prefix), Some((0,5))).getOrElse(List()).sortBy(x => client.hget("geoitem." + client.smembers("georitem." + x.split(":")(1)).get.flatten.reduceLeft(popmax), "population").get.toInt)(Ordering[Int].reverse)
+      }
+    }
     Ok(Json.toJson(Map("suggestions" -> names.map(_.split(":")(1)))))
   }
 
@@ -68,26 +77,51 @@ class WidgetController @Inject() (environment: play.api.Environment, configurati
       val (small, big) = (Set(0,1), Set(2,3,4,5))
       val bedrooms = if (data.bedrooms.contains(0)) small else Set[Int]() ++ (if (data.bedrooms.contains(2)) big else Set())
       val widget = Widget(bedrooms = bedrooms, rentlo = ilo.min(ihi), renthi = ihi.max(ilo), place = data.autocomplete)
-      val byprice = redisClient.zrangebyscore("item.index.price", ilo.min(ihi).toDouble, true, ihi.max(ilo).toDouble, true, None).getOrElse(List())
-      val bybeds = redisClient.zrangebyscore("item.index.bedrooms", bedrooms.min.toDouble, true, bedrooms.max.toDouble, true, None).getOrElse(List())
+      val byprice = rediscp.withClient {
+        _.zrangebyscore("item.index.price", ilo.min(ihi).toDouble, true, ihi.max(ilo).toDouble, true, None).getOrElse(List())
+      }
+      val bybeds = rediscp.withClient {
+        _.zrangebyscore("item.index.bedrooms", bedrooms.min.toDouble, true, bedrooms.max.toDouble, true, None).getOrElse(List())
+      }
 
-      val matches = redisClient.zrangebylex("geoitem.index.name", "[%s".format(data.autocomplete.toLowerCase), "(%s{".format(data.autocomplete.toLowerCase), None).getOrElse(List[String]())
-      val geonameids = matches.flatMap(mat => redisClient.smembers("georitem." + mat.split(":")(1)).getOrElse(Set())).flatten
-
+      val matches = rediscp.withClient {
+        _.zrangebylex("geoitem.index.name", "[%s".format(data.autocomplete.toLowerCase), "(%s{".format(data.autocomplete.toLowerCase), None).getOrElse(List[String]())
+      }
+      val geonameids = rediscp.withClient {
+        client => {
+          matches.flatMap(mat => client.smembers("georitem." + mat.split(":")(1)).getOrElse(Set())).flatten
+        }
+      }
       titles.clear()
       links.clear()
       if (!geonameids.isEmpty) {
+        val nyp = new ReverseGeoCode(environment.resourceAsStream("NY.P.tsv").get, true)
         val p0 = geonameids.reduceLeft(popmax)
-        val p0_fields = redisClient.hmget("geoitem." + p0, "longitude", "latitude", "admin2code", "featurecode").get
+        val p0_fields = rediscp.withClient {
+          _.hmget("geoitem." + p0, "longitude", "latitude", "admin2code", "featurecode").get
+        }
         val dist = if (p0_fields("featurecode").matches("PPLA.*")) 25 else 1.5
-        val proximate = redisClient.georadius("item.geohash.coords", p0_fields("longitude"), p0_fields("latitude"), dist, "km", true, false, false, None, None, None, None).getOrElse(List()).flatten
+        val proximate = rediscp.withClient {
+          _.georadius("item.geohash.coords", p0_fields("longitude"), p0_fields("latitude"), dist, "km", true, false, false, None, None, None, None).getOrElse(List()).flatten
+        }
         val pn = nyp.nearestPlace(p0_fields("latitude").toDouble, p0_fields("longitude").toDouble).id
-        val proximate_and_colocal = proximate.filter(p1 => p0_fields("admin2code") == redisClient.hget("geoitem." + nyp.nearestPlace(p1.coords.get._2.toDouble, p1.coords.get._1.toDouble).id, "admin2code").get)
+        val proximate_and_colocal = rediscp.withClient {
+          client => {
+            proximate.filter(p1 => p0_fields("admin2code") == client.hget("geoitem." + nyp.nearestPlace(p1.coords.get._2.toDouble, p1.coords.get._1.toDouble).id, "admin2code").getOrElse(""))
+          }
+        }
         val intersect = byprice.toSet.intersect(bybeds.toSet).intersect(proximate_and_colocal.map(x => x.member.get).toSet)
-        val latestFirst = intersect.toList.sortBy(x => ISODateTimeFormat.dateTimeParser().parseDateTime(redisClient.hget("item." + x, "posted").get))(DateTimeOrdering.reverse)
+        val latestFirst = rediscp.withClient {
+          client => {
+            intersect.toList.sortBy(x => ISODateTimeFormat.dateTimeParser().parseDateTime(client.hget("item." + x, "posted").get))(DateTimeOrdering.reverse)
+          }
+        }
 
-        links ++= latestFirst.map(x => redisClient.hget("item." + x, "link").get)
-        titles ++= latestFirst.map(x => redisClient.hget("item." + x, "title").get)
+        links ++= rediscp.withClient {
+          client => { latestFirst.map(x => client.hget("item." + x, "link").get) }
+        }
+        titles ++= rediscp.withClient {
+          client => { latestFirst.map(x => client.hget("item." + x, "title").get) } }
       }
       Redirect(routes.WidgetController.Display())
     }

@@ -17,7 +17,7 @@ lazy val removeOldImage = taskKey[Unit]("Remove old image to avoid danglers")
 
 removeOldImage := {
   Keys.streams.value.log.info("Removing old " + (dockerTarget in Docker).value)
-  Process(Seq("docker", "rmi", (dockerTarget in Docker).value)) ! new ProcessLogger {
+  Process(Seq("docker", "rmi", "--force", (dockerTarget in Docker).value)) ! new ProcessLogger {
     def error(err: => String) = err match {
       case s if s.contains("No such image") => Keys.streams.value.log.info("Pristine")
       case s                                =>
@@ -65,7 +65,7 @@ initialCommands := """
 |import com.redis._
 |import geocode._
 |val redisClient = new RedisClient("localhost", 6379)
-|val rgc = new ReverseGeoCode(new java.io.FileInputStream("/home/dick/scrapy/NY.tsv"), true)
+|val rgc = new ReverseGeoCode(new java.io.FileInputStream("/home/dick/play-app/conf/NY.P.tsv"), true)
 |def time[R](block: => R): R = {
 |    val t0 = System.nanoTime()
 |    val result = block    // call-by-name
