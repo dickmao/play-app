@@ -407,10 +407,6 @@
                     }
                     break;
                 case keys.RETURN:
-                    if (that.hint && that.options.onHint) {
-                        that.selectHint();
-                        return;
-                    }
                     if (that.selectedIndex === -1) {
                         that.hide();
                         return;

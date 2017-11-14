@@ -1,7 +1,6 @@
 package controllers
 import play.api.data.Forms._
 import play.api.data.Form
-import com.redis._
 
 object WidgetForm {
 
@@ -29,6 +28,4 @@ object WidgetForm {
 
   case class CheckBeds(value: Int, name: String)
   val checkbeds = Seq(CheckBeds(0, "0-1BR"), CheckBeds(2, "2BR+"))
-
-  val rediscp = new RedisClientPool("redis", 6379)
 }

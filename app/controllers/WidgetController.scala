@@ -14,6 +14,7 @@ import scala.collection.immutable._
 import com.github.nscala_time.time.Imports._
 import org.joda.time.format.ISODateTimeFormat
 import geocode._
+import com.redis._
 
 /**
  * The classic WidgetController using I18nSupport.
@@ -27,6 +28,8 @@ class WidgetController @Inject() (environment: play.api.Environment, configurati
   private val links = scala.collection.mutable.ArrayBuffer.empty[String]
   private val titles = scala.collection.mutable.ArrayBuffer.empty[String]
   private val postUrl = routes.WidgetController.Update()
+  private val rediscp = new RedisClientPool(configuration.getString("redis.hostname").getOrElse("redis"),
+    configuration.getInt("redis.port").getOrElse(6379))
 
   def index = Action {
     Ok(views.html.index())

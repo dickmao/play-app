@@ -27,12 +27,42 @@ removeOldImage := {
     }
     def buffer[T](f: => T) = f
   }
+}
 
+lazy val reloginEcr = taskKey[Unit]("Renew ECR Authorization Token")
+
+reloginEcr := {
+  Keys.streams.value.log.info("Renewing ECR Authorization Token")
+  Process(Seq("aws", "ecr", "get-login", "--no-include-email")) ! new ProcessLogger {
+    def error(err: => String) = err match {
+      case s if !s.trim.isEmpty => Keys.streams.value.log.error(s)
+      case s                    =>
+    }
+    def info(inf: => String) = inf match {
+      case s if s.contains("login")  => Process(s) ! new ProcessLogger {
+        def error(err: => String) = err match {
+          case s                     =>
+        }
+        def info(inf: => String) = inf match {
+          case s if s.contains("Login Succeeded") => Keys.streams.value.log.info("ECR login renewed")
+          case s                                  => Keys.streams.value.log.warn("ECR login likely failed")
+        }
+        def buffer[T](f: => T) = f
+      }
+      case s                         => Keys.streams.value.log.warn("ECR get-login failed")
+    }
+    def buffer[T](f: => T) = f
+  }
 }
 
 publishLocal in Docker := {
   val _ = (playStageSecret.value, removeOldImage.value)
   (publishLocal in Docker).value
+}
+
+publish in Docker := {
+  val _ = (playStageSecret.value, removeOldImage.value, reloginEcr.value)
+  (publish in Docker).value
 }
 
 // generate application secret on every docker:publish
@@ -64,8 +94,9 @@ lazy val root = (project in file(".")).enablePlugins(PlayScala)
 initialCommands := """
 |import com.redis._
 |import geocode._
+|val rediscp = new RedisClientPool("localhost", 6379)
 |val redisClient = new RedisClient("localhost", 6379)
-|val rgc = new ReverseGeoCode(new java.io.FileInputStream("/home/dick/play-app/conf/NY.P.tsv"), true)
+|val nyp = new ReverseGeoCode(new java.io.FileInputStream("/home/dick/play-app/conf/NY.P.tsv"), true)
 |def time[R](block: => R): R = {
 |    val t0 = System.nanoTime()
 |    val result = block    // call-by-name
