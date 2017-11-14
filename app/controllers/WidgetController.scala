@@ -107,7 +107,6 @@ class WidgetController @Inject() (environment: play.api.Environment, configurati
         val proximate = rediscp.withClient {
           _.georadius("item.geohash.coords", p0_fields("longitude"), p0_fields("latitude"), dist, "km", true, false, false, None, None, None, None).getOrElse(List()).flatten
         }
-        val pn = nyp.nearestPlace(p0_fields("latitude").toDouble, p0_fields("longitude").toDouble).id
         val proximate_and_colocal = rediscp.withClient {
           client => {
             proximate.filter(p1 => p0_fields("admin2code") == client.hget("geoitem." + nyp.nearestPlace(p1.coords.get._2.toDouble, p1.coords.get._1.toDouble).id, "admin2code").getOrElse(""))
