@@ -3766,7 +3766,6 @@
 5128573	New Vernon	New Vernon		41.50176	-74.48433	P	PPL	US		NY	071	48857		0	199	203	America/New_York	2017-05-23
 5128577	New Windsor	New Windsor	New Windsor,New Windsor Center,Nju Vinsor,nyw wyndswr,Њу Винсор,نيو ويندسور	41.47676	-74.02375	P	PPL	US		NY	071	50848		8922	49	54	America/New_York	2017-05-23
 5128580	New Woodstock	New Woodstock		42.8484	-75.85436	P	PPL	US		NY	053	13156		0	398	400	America/New_York	2017-05-23
-5128581	New York City	New York City	Aebura,Bandar Raya New York,Big Apple,Cathair Nua Eabhraic,City of New York,Eabhraig Nuadh,Efrog Newydd,Evrek Nowydh,Ga-no-no,Kanon:no,Kanono,Kanón:no,Kota New York,Lungsod ng New York,N'ju-Jork,NY,NYC,Nea Yorke,Nei Yarrick Schtadt,Neu Amsterdam,Neu Jorck,New Amsterdam,New Orange,New Yorc,New York,New York City,New York Stad,New York borg,New York kenti,New York-borg,New Yorke,New Yorku,Niujorkas,Nju Jork,Njujork,Nouvelle Yorck,Nouvieau York,Nov-Jorko,Nova Amsterda,Nova Iorque,Nova York,Nova-York,Novjorko,Novum Eboracum,Nowy Jork,Nua-Eabhrac,Nueva York,Nujorka,Nyja Jorvik,Nyu York Shehiri,Nòva York,Nýja Jórvík,Thanh pho New York,The Big Apple,Thành phố New York,York Berri,manhattan,n'yuyorka,ni'u iyarka siti,niu yue,niu yue shi,niyuyark nakaram,nkhr niwyxrk,nyuyog,nyuyog si,nyuyoku,nyw ywrq,nywywrk,Ņujorka,Νέα Υόρκη,Њу Јорк,Њујорк,Нью-Ёрк,Нью-Йорк,Ню Йорк,ניו יארק,ניו יורק,ניו־יאָרק,نيويورك,نیویارک شہر,نیویورک,न्यूयॉर्क,নিউ ইয়র্ক সিটি,நியூயார்க் நகரம்,นครนิวยอร์ก,ნიუ-იორკი,ニューヨーク,マンハッタン,紐約市,纽约,뉴욕,뉴욕 시	40.71427	-74.00597	P	PPL	US		NY				8175133	10	57	America/New_York	2015-02-02
 5128616	New York Mills	New York Mills	New York Mills,New York Upper Mills	43.10535	-75.29128	P	PPL	US		NY	065	81754		3308	142	145	America/New_York	2017-05-23
 5128639	Newark	Newark	Arcadia,East Newark,Lockville,Miller's Basin,N'juark,Newark,Newark - Arcadia,Njuark,nywark,nywark  nyw yark,Њуарк,Ньюарк,نيوارك,نیوآرک، نیو یارک	43.04673	-77.09525	P	PPL	US		NY	117	02440		8843	135	136	America/New_York	2017-05-23
 5128644	Newark Valley	Newark Valley	Newark Valley,Westville	42.22369	-76.18326	P	PPL	US		NY	107	49913		957	295	297	America/New_York	2017-05-23
@@ -6435,13 +6434,7 @@
 6332690	Lambert Houses	Lambert Houses		40.84278	-73.87889	P	PPL	US		NY	005			0	12	18	America/New_York	2007-02-16
 6332691	Sedgwick Houses	Sedgwick Houses		40.84639	-73.9225	P	PPLX	US		NY	005			0	48	45	America/New_York	2009-07-13
 6543957	Riverside Apt	Riverside Apt		40.75814	-73.95385	P		US		NY	061			0		-4	America/New_York	2007-05-21
-6615318	Upper Manhattan	Upper Manhattan	Upper Manhattan,Uptown,Uptown Manhattan	40.80881	-73.94777	P	PPLX	US		NY				0		16	America/New_York	2015-05-02
-6615322	Upper East Side	Upper East Side	Aukstutinis Istsaidas,Aukštutinis Istsaidas,Verkhnij Ist-Sajd,apr ayst sayd,eopeoiseuteusaideu,shang dong cheng,xap pexr xis t sid,Верхний Ист-Сайд,אפער איסט סייד,אפר איסט סייד,آپر ایست ساید,อัปเปอร์อีสต์ไซด์,ზემო ისტ-საიდი,アッパー・イースト・サイド,上东城,어퍼이스트사이드	40.77833	-73.95189	P	PPLX	US		NY				0		27	America/New_York	2007-08-10
-6615325	Downtown Manhattan	Downtown Manhattan	Downtown,Lower Manhattan	40.72124	-73.99764	P	PPL	US		NY				0		24	America/New_York	2017-04-16
-6619212	Meat Packing District	Meat Packing District		40.73971	-74.00638	P	PPLX	US		NY				0		7	America/New_York	2014-06-28
 6640032	Briarwood	Briarwood		40.70935	-73.81529	P	PPL	US		NY	081			0		30	America/New_York	2017-04-21
-6640033	Kew Gardens Hills	Kew Gardens Hills		40.72404	-73.82006	P	PPL	US		NY				0		23	America/New_York	2008-01-28
-6690894	Shellbank Creek	Shellbank Creek		40.58789	-73.92597	P	PPLX	US		NY				0		2	America/New_York	2008-03-14
 6690901	Roosevelt Island	Roosevelt Island	Roosevelt Island	40.76403	-73.9482	P	PPL	US		NY	061			0		10	America/New_York	2009-04-17
 6690909	Eastchester	Eastchester		40.95754	-73.80976	P	PPLX	US		NY	119	21820		33135		79	America/New_York	2017-05-23
 6696479	Prospect Heights	Prospect Heights		40.67751	-73.96769	P	PPLX	US		NY	047			0		37	America/New_York	2015-10-14
@@ -7376,7 +7369,6 @@
 8436492	Prospect Lefferts Gardens	Prospect Lefferts Gardens		40.65898	-73.95049	P	PPLX	US		NY	047			0		21	America/New_York	2012-12-31
 8436493	Crown Heights	Crown Heights	Kraun-Khajts,qrwyn hyyts,Краун-Хайтс,קראון הייטס,קרוין הייטס	40.66797	-73.9448	P	PPLX	US		NY	047			0		37	America/New_York	2012-12-31
 8436513	Windsor Terrace	Windsor Terrace		40.65391	-73.97575	P	PPLX	US		NY	047			0		33	America/New_York	2012-12-31
-8436514	Hunters Point	Hunters Point		40.7477	-73.95062	P	PPLX	US		NY				0		4	America/New_York	2012-12-31
 8449483	Ocean Hill	Ocean Hill		40.67417	-73.91167	P	PPLX	US		NY	047			0		24	America/New_York	2013-01-18
 8479109	Cedar Beach	Cedar Beach		41.0325	-72.39806	P	PPL	US		NY	103	69463		0	3	6	America/New_York	2017-05-23
 8479291	Hess Road	Hess Road		43.31	-78.64806	P	PPL	US		NY	063	50232		0	104	104	America/New_York	2017-05-23
