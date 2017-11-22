@@ -78,7 +78,7 @@ class WidgetController @Inject() (environment: play.api.Environment, configurati
       val ilo = data.rentlo.getOrElse("$0").replaceAll("\\D+", "").toInt
       val ihi = data.renthi.getOrElse(Widget.TooDear).replaceAll("\\D+", "").toInt
       val (small, big) = (Set(0,1), Set(2,3,4,5))
-      val bedrooms = if (data.bedrooms.contains(0)) small else Set[Int]() ++ (if (data.bedrooms.contains(2)) big else Set())
+      val bedrooms = Set[Int]() ++ (if (data.bedrooms.contains(0)) small else Set()) ++ (if (data.bedrooms.contains(2)) big else Set())
       val widget = Widget(bedrooms = bedrooms, rentlo = ilo.min(ihi), renthi = ihi.max(ilo), place = data.autocomplete)
       val byprice = rediscp.withClient {
         _.zrangebyscore("item.index.price", ilo.min(ihi).toDouble, true, ihi.max(ilo).toDouble, true, None).getOrElse(List())
