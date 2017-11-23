@@ -56,7 +56,8 @@ class WidgetController @Inject() (environment: play.api.Environment, configurati
         client.zrangebylex("geoitem.index.name", "[%s".format(prefix), "(%s{".format(prefix), Some((0,5))).getOrElse(List()).sortBy(x => client.hget("geoitem." + client.smembers("georitem." + x.split(":")(1)).get.flatten.reduceLeft(popmax), "population").get.toInt)(Ordering[Int].reverse)
       }
     }
-    Ok(Json.toJson(Map("suggestions" -> names.map(_.split(":")(1)))))
+    Ok(Json.toJson(Map("results" -> names.map(name => Map("name" -> name.split(":")(1),
+        "value" -> name.split(":")(1)) ))))
   }
 
   def javascriptRoutes = Action { implicit request: Request[AnyContent] =>

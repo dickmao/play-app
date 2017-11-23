@@ -1,0 +1,64 @@
+a {
+  color: #4169e1;
+}
+
+a:visited {
+  color: #666633;
+}
+
+body {
+  margin: 15px;
+}
+
+hr {
+  height: 0;
+  margin-top: 20px;
+  margin-bottom: 20px;
+}
+
+#autocomplete input {
+  vertical-align: baseline;
+  margin: 0;
+  width: 20em;
+  line-height: normal;
+}
+
+#checkbeds_field {
+  margin-left: 5px;
+  vertical-align:middle;
+}
+
+#minck {
+  margin-right: 5px;
+  background-color:#EFEFEF;
+  border-radius:4px;
+  border:1px solid #D0D0D0;
+  overflow:auto;
+  float:left;
+}
+
+#minck label {
+  float:left;
+  width:4.0em;
+}
+
+#minck:hover {
+  background:#fff;
+}
+
+#minck label span {
+  text-align:center;
+  padding:3px 0px;
+  display:block;
+  height:100%;
+}
+
+#minck label input {
+  position:absolute;
+  top: -30px; /* hides the checkbox */
+}
+
+#minck input:checked + span {
+  background-color:#911;
+  color:#fff;
+}
