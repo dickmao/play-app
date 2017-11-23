@@ -7,7 +7,7 @@ package models
  * which are used for reads, distinct from the form processing DTO,
  * which are used for writes.
  */
-case class Widget(bedrooms: Set[Int], rentlo: Int, renthi: Int, place: String)
+case class Widget(bedrooms: Set[Int], rentlo: Int, renthi: Int, places: Set[String])
 {
 }
 

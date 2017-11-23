@@ -16,11 +16,8 @@ hr {
   margin-bottom: 20px;
 }
 
-#autocomplete input {
-  vertical-align: baseline;
-  margin: 0;
-  width: 20em;
-  line-height: normal;
+#autocomplete_field .ui.multiple.search.dropdown {
+  min-width: 20em;
 }
 
 #checkbeds_field {
