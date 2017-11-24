@@ -1,6 +1,9 @@
-@(form: Form[WidgetForm.Data], postUrl: Call, checkbeds: Seq[WidgetForm.CheckBeds], configuration: play.api.Configuration, links: Seq[String], titles: Seq[String])(implicit request: RequestHeader, messages: Messages)
+@(form: Form[WidgetForm.Data], postUrl: Call, checkbeds: Seq[WidgetForm.CheckBeds], configuration: play.api.Configuration, fieldsById: List[Map[String, String]])(implicit request: RequestHeader, messages: Messages)
 
 @import views.minimal._
+@import com.github.nscala_time.time.Imports._
+@import org.joda.time.format.ISODateTimeFormat
+
 @fc_check = @{ helper.FieldConstructor(minimal.checkboxGroupFieldConstructor.f) }
 @fc_price = @{ helper.FieldConstructor(minimal.priceFieldConstructor.f) }
 
@@ -36,6 +39,7 @@
     <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.2.1/jquery.min.js"></script> 
     <script src="@routes.Assets.at("javascripts/jquery.autocomplete.js")"></script>
     <script src="@routes.Assets.at("javascripts/semantic.min.js")"></script>
+    <script src="@routes.Assets.at("javascripts/jquery.tablesort.min.js")"></script>
     <script type="text/javascript" src="@routes.WidgetController.javascriptRoutes"></script>
 
     @helper.CSRF.formField
@@ -72,10 +76,26 @@
 
     <button>Update</button>
     <hr/>
-    
-    @for( (l,t) <- (links zip titles)) {
-      <p><a href=@l>@t</a>
+
+    @if(!fieldsById.isEmpty) {
+      <table class="ui sortable striped table">
+        <thead>
+          <tr>
+            <th>Title</th>
+            <th>Price</th>
+            <th sorted descending>Posted</th>
+          </tr>
+        </thead>
+        <tbody>
+        @for( item <- fieldsById ) {
+          <tr>
+          <td><a href=@item("link")>@item("title")</td>
+          <td><a href=@item("link")>@item.get("price").fold("unspecified")(x => java.text.NumberFormat.getIntegerInstance.format(x.toInt))</td>
+          <td><a href=@item("link")>@ISODateTimeFormat.dateTimeParser().parseDateTime(item("posted")).toString(DateTimeFormat.forPattern("EEE, d MMM h:m a"))</td>
+          </tr>
+        }
+        </tbody>
+      </table>
     }
   }
-
 }

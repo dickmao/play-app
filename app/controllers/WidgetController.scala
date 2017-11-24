@@ -25,8 +25,7 @@ import com.redis._
 class WidgetController @Inject() (environment: play.api.Environment, configuration: play.api.Configuration, val messagesApi: MessagesApi) extends Controller with I18nSupport {
   import WidgetForm._
 
-  private val links = scala.collection.mutable.ArrayBuffer.empty[String]
-  private val titles = scala.collection.mutable.ArrayBuffer.empty[String]
+  private var fieldsById = List[Map[String,String]]()
   private val postUrl = routes.WidgetController.Update()
   private val rediscp = new RedisClientPool(configuration.getString("redis.hostname").getOrElse("redis"),
     configuration.getInt("redis.port").getOrElse(6379))
@@ -36,7 +35,7 @@ class WidgetController @Inject() (environment: play.api.Environment, configurati
   }
 
   def Display = Action { implicit request: Request[AnyContent] =>
-    Ok(views.html.listWidgets(form, postUrl, checkbeds, configuration, links, titles))
+    Ok(views.html.listWidgets(form, postUrl, checkbeds, configuration, fieldsById))
   }
 
   def popmax(id1: String, id2: String) : String = {
@@ -71,7 +70,7 @@ class WidgetController @Inject() (environment: play.api.Environment, configurati
   // This will be the action that handles our form post
   def Update = Action { implicit request: Request[AnyContent] =>
     val errorFunction = { formWithErrors: Form[Data] =>
-      BadRequest(views.html.listWidgets(formWithErrors, postUrl, checkbeds, configuration, links, titles))
+      BadRequest(views.html.listWidgets(formWithErrors, postUrl, checkbeds, configuration, fieldsById))
     }
 
     val successFunction = { data: Data =>
@@ -87,9 +86,6 @@ class WidgetController @Inject() (environment: play.api.Environment, configurati
       val bybeds = rediscp.withClient {
         _.zrangebyscore("item.index.bedrooms", bedrooms.min.toDouble, true, bedrooms.max.toDouble, true, None).getOrElse(List())
       }
-
-      titles.clear()
-      links.clear()
 
       val results = scala.collection.mutable.Set.empty[String]
       for (place <- places) {
@@ -120,16 +116,10 @@ class WidgetController @Inject() (environment: play.api.Environment, configurati
         }
       }
 
-      val latestFirst = rediscp.withClient {
-        client => {
-          results.toList.sortBy(x => ISODateTimeFormat.dateTimeParser().parseDateTime(client.hget("item." + x, "posted").get))(DateTimeOrdering.reverse)
-        }
+      fieldsById = rediscp.withClient {
+        client => { results.toList.map(x => client.hgetall1("item." + x).get).sortBy(x => ISODateTimeFormat.dateTimeParser().parseDateTime(x("posted")))(DateTimeOrdering.reverse) }
       }
-      links ++= rediscp.withClient {
-        client => { latestFirst.map(x => client.hget("item." + x, "link").get) }
-      }
-      titles ++= rediscp.withClient {
-        client => { latestFirst.map(x => client.hget("item." + x, "title").get) } }
+
       Redirect(routes.WidgetController.Display())
     }
     form.bindFromRequest.fold(errorFunction, successFunction)
