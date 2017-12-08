@@ -26,7 +26,6 @@ class WidgetController @Inject() (environment: play.api.Environment, configurati
   import WidgetForm._
 
   private var fieldsById = List[Map[String,String]]()
-  private val prepopulate = configuration.getString("dropdown_prepopulate").getOrElse("").split(",")
   private val postUrl = routes.WidgetController.Update()
   private val rediscp = new RedisClientPool(configuration.getString("redis.hostname").getOrElse("redis"),
     configuration.getInt("redis.port").getOrElse(6379))
@@ -36,7 +35,7 @@ class WidgetController @Inject() (environment: play.api.Environment, configurati
   }
 
   def Display = Action { implicit request: Request[AnyContent] =>
-    Ok(views.html.listWidgets(form, postUrl, checkbeds, configuration, fieldsById, prepopulate))
+    Ok(views.html.listWidgets(form, postUrl, checkbeds, configuration, fieldsById))
   }
 
   def popmax(id1: String, id2: String) : String = {
@@ -71,7 +70,7 @@ class WidgetController @Inject() (environment: play.api.Environment, configurati
   // This will be the action that handles our form post
   def Update = Action { implicit request: Request[AnyContent] =>
     val errorFunction = { formWithErrors: Form[Data] =>
-      BadRequest(views.html.listWidgets(formWithErrors, postUrl, checkbeds, configuration, fieldsById, prepopulate))
+      BadRequest(views.html.listWidgets(formWithErrors, postUrl, checkbeds, configuration, fieldsById))
     }
 
     val successFunction = { data: Data =>

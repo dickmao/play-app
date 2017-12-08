@@ -1,4 +1,4 @@
-@(form: Form[WidgetForm.Data], postUrl: Call, checkbeds: Seq[WidgetForm.CheckBeds], configuration: play.api.Configuration, fieldsById: List[Map[String, String]], prepopulate: Seq[String])(implicit request: RequestHeader, messages: Messages)
+@(form: Form[WidgetForm.Data], postUrl: Call, checkbeds: Seq[WidgetForm.CheckBeds], configuration: play.api.Configuration, fieldsById: List[Map[String, String]])(implicit request: RequestHeader, messages: Messages)
 
 @import views.minimal._
 @import com.github.nscala_time.time.Imports._
@@ -49,15 +49,17 @@
     and     
     @minimal.inputText(field = form("renthi"), args = 'size -> 10)(handler = fc_check, implicitly[Messages])
     in 
-    @minimal.inputDropdown(field = form("autocomplete"), prepopulate = prepopulate)(handler = fc_check, implicitly[Messages])
+    @minimal.inputDropdown(field = form("autocomplete"))(handler = fc_check, implicitly[Messages])
 
     <script>
     $('.ui.dropdown').dropdown({
         apiSettings: {
           url: '/autocomplete?query={query}'
         },
-        minCharacters: 3,
+        minCharacters: 2,
         keepOnScreen: false,
+        placeholder: "e.g., Manhattan",
+        showOnFocus: true,
         values: [
           @if(form("autocomplete").value.exists(_.trim.nonEmpty)) {
             @for(item <- form("autocomplete").value.get.split(",") ) {
@@ -65,6 +67,14 @@
                 name: '@item',
                 value: '@item',
                 selected: true,
+              },
+            }
+          } else {
+            @for(item <- configuration.getString("dropdown_prepopulate").getOrElse("").split(",")) {
+              {
+                name: '@item',
+                value: '@item',
+                selected: false,
               },
             }
           }
