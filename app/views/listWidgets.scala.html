@@ -59,26 +59,6 @@
         minCharacters: 2,
         keepOnScreen: false,
         placeholder: "e.g., Manhattan",
-        showOnFocus: true,
-        values: [
-          @if(form("autocomplete").value.exists(_.trim.nonEmpty)) {
-            @for(item <- form("autocomplete").value.get.split(",") ) {
-              {
-                name: '@item',
-                value: '@item',
-                selected: true,
-              },
-            }
-          } else {
-            @for(item <- configuration.getString("dropdown_prepopulate").getOrElse("").split(",")) {
-              {
-                name: '@item',
-                value: '@item',
-                selected: false,
-              },
-            }
-          }
-        ],
     })
     ;
 

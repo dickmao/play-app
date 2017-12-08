@@ -1,0 +1,21 @@
+@**
+ * Generate an HTML input text.
+ *
+ * Example:
+ * {{{
+ * @inputDropdown(field = myForm("name"))
+ * }}}
+ *
+ * @param field The form field.
+ * @param handler The field constructor.
+ *@
+@(field: play.api.data.Field, prepop: Sequence[String], args: (Symbol,Any)*)(implicit handler: helper.FieldConstructor, messages: play.api.i18n.Messages)
+
+@helper.input(field, args:_*) { (id, name, value, htmlArgs) =>
+    <div class="ui fluid multiple search selection dropdown" @toHtmlArgs(htmlArgs)>
+      <input type="hidden" id="@id"  name="@name"/>
+      <div type="text" class="search" tabindex="0"></div>
+      <div class="default text"></div>
+
+    </div>
+}

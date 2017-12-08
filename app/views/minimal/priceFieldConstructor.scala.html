@@ -1,0 +1,27 @@
+@**
+ * Minimal field constructor.
+ *
+ * It generates field as following:
+ * {{{
+ * <dl class="error">
+ *   <dt><label for="name">Your name:</label></dt>
+ *   <dd><input type="text" id="name" name="name"></dd>
+ *   <dd class="error">This field is required</dd>
+ *   <dd class="info">Required</dd>
+ * </dl>
+ * }}}
+ *
+ * @param el The field informations.
+ *@
+@(elements: views.html.helper.FieldElements)
+
+@import play.api.i18n._
+@import views.html.helper._
+
+<div style="display:inline-block" class="@elements.args.get('_class) @if(elements.hasErrors) {error}" id="@elements.args.get('_id).getOrElse(elements.id + "_field")">
+  <label for="@elements.id">@elements.label</label>
+  <div class="input">
+    @elements.input
+    <span class="errors" style="color:#8866ff;">@elements.errors.mkString(", ")</span>
+  </div>
+</div>
