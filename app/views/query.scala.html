@@ -46,7 +46,11 @@
 
     <script>
     $('.ui.dropdown').dropdown({
-        minCharacters: 2,
+      apiSettings: {
+        url: '/autocomplete?query={query}',
+        cache: false,
+      },
+      keepOnScreen: false,
     });
 
     function NonemptyAutocomplete() {
@@ -54,7 +58,6 @@
         $('#autocomplete').val("Manhattan");
       }
     }
-
     </script>
 
     @minimal.inputCheckboxGroup(form("checkbeds"), options = checkbeds.map(g => g.value.toString -> g.name))(handler = fc_price, implicitly[Messages])

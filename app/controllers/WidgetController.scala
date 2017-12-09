@@ -50,13 +50,12 @@ class WidgetController @Inject() (environment: play.api.Environment, configurati
 
   def fetch = Action { implicit request: Request[AnyContent] => 
     val prefix = request.getQueryString("query").get.toLowerCase()
-    val names = rediscp.withClient {
-      client => {
-        client.zrangebylex("geoitem.index.name", "[%s".format(prefix), "(%s{".format(prefix), Some((0,5))).getOrElse(List()).sortBy(x => client.hget("geoitem." + client.smembers("georitem." + x.split(":")(1)).get.flatten.reduceLeft(popmax), "population").get.toInt)(Ordering[Int].reverse)
+    val names = if (prefix.isEmpty) configuration.getString("dropdown_prepopulate").getOrElse("").split(",").toList.map(name => s"$name:$name") else rediscp.withClient { client => {
+        client.zrangebylex("geoitem.index.name", "[%s".format(prefix), "(%s{".format(prefix), Some((0,10))).getOrElse(List()).sortBy(x => client.hget("geoitem." + client.smembers("georitem." + x.split(":")(1)).get.flatten.reduceLeft(popmax), "population").get.toInt)(Ordering[Int].reverse)
       }
     }
     Ok(Json.toJson(Map("results" -> names.map(name => Map("name" -> name.split(":")(1),
-        "value" -> name.split(":")(1)) ))))
+      "value" -> name.split(":")(1)) ))))
   }
 
   def javascriptRoutes = Action { implicit request: Request[AnyContent] =>
