@@ -18,10 +18,6 @@
 @import play.api.i18n._
 @import views.html.helper._
 
-<div style="display:inline-block" class="@elements.args.get('_class) @if(elements.hasErrors) {error}" id="@elements.args.get('_id).getOrElse(elements.id + "_field")">
-  <label for="@elements.id">@elements.label</label>
-  <div class="input">
-    @elements.input
-    <span class="errors" style="color:#8866ff;">@elements.errors.mkString(", ")</span>
-  </div>
+<div style="display:inline-block" id="@elements.args.get('_id).getOrElse(elements.id + "_field")">
+  @elements.input
 </div>

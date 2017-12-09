@@ -2,7 +2,8 @@
 # This file defines all application routes (Higher priority routes first)
 # ~~~~
 
-GET     /                           controllers.WidgetController.Display
+GET     /                           controllers.WidgetController.Query
+GET     /test                       controllers.WidgetController.Test
 GET     /javascriptRoutes           controllers.WidgetController.javascriptRoutes
 GET     /autocomplete               controllers.WidgetController.fetch
 POST    /                           controllers.WidgetController.Update

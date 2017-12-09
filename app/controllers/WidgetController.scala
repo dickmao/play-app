@@ -30,12 +30,12 @@ class WidgetController @Inject() (environment: play.api.Environment, configurati
   private val rediscp = new RedisClientPool(configuration.getString("redis.hostname").getOrElse("redis"),
     configuration.getInt("redis.port").getOrElse(6379))
 
-  def index = Action {
-    Ok(views.html.index())
+  def Test = Action { implicit request: Request[AnyContent] =>
+    Ok(views.html.test(form, configuration))
   }
 
-  def Display = Action { implicit request: Request[AnyContent] =>
-    Ok(views.html.listWidgets(form, postUrl, checkbeds, configuration, fieldsById))
+  def Query = Action { implicit request: Request[AnyContent] =>
+    Ok(views.html.query(form, postUrl, checkbeds, configuration, fieldsById))
   }
 
   def popmax(id1: String, id2: String) : String = {
@@ -70,7 +70,7 @@ class WidgetController @Inject() (environment: play.api.Environment, configurati
   // This will be the action that handles our form post
   def Update = Action { implicit request: Request[AnyContent] =>
     val errorFunction = { formWithErrors: Form[Data] =>
-      BadRequest(views.html.listWidgets(formWithErrors, postUrl, checkbeds, configuration, fieldsById))
+      BadRequest(views.html.query(formWithErrors, postUrl, checkbeds, configuration, fieldsById))
     }
 
     val successFunction = { data: Data =>
@@ -120,7 +120,7 @@ class WidgetController @Inject() (environment: play.api.Environment, configurati
         client => { results.toList.map(x => client.hgetall1("item." + x).get).sortBy(x => ISODateTimeFormat.dateTimeParser().parseDateTime(x("posted")))(DateTimeOrdering.reverse) }
       }
 
-      Redirect(routes.WidgetController.Display())
+      Redirect(routes.WidgetController.Query())
     }
     form.bindFromRequest.fold(errorFunction, successFunction)
   }

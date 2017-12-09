@@ -1,4 +1,5 @@
 @**
+ * OBSOLETE
  * Minimal field constructor.
  *
  * It generates field as following:
@@ -18,8 +19,6 @@
 @import play.api.i18n._
 @import views.html.helper._
 
-<div style="display:inline-block" class="@elements.args.get('_class) @if(elements.hasErrors) {error}" id="@elements.args.get('_id).getOrElse(elements.id + "_field")">
-  <div class="input">
+<div class="@elements.args.get('_class) @if(elements.hasErrors) {error}" id="@elements.args.get('_id).getOrElse(elements.id + "_field")">
     @elements.input
-  </div>
 </div>

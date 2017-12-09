@@ -4,22 +4,9 @@
 @import com.github.nscala_time.time.Imports._
 @import org.joda.time.format.ISODateTimeFormat
 
-@fc_check = @{ helper.FieldConstructor(minimal.checkboxGroupFieldConstructor.f) }
 @fc_price = @{ helper.FieldConstructor(minimal.priceFieldConstructor.f) }
 
 @main("Keeyosk") {
-  <script type="text/javascript">
-    function numberWithCommas(x) {
-        var parts = x.toString().split(".");
-        parts[0] = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, ",");
-        return parts.join(".");
-    }
-
-    function reformat(obj) {
-      obj.value = `\$${ numberWithCommas(Math.floor(obj.value.replace(/[^\d\.]/g, '')))}`
-    }
-  </script>
-
   @* Flash shows updates to a page *@
   @request.flash.data.map{ case (foo, bar) =>
     <div class=@foo>@bar</div>
@@ -34,33 +21,33 @@
     }
   }
 
+  <script src="@routes.Assets.at("javascripts/jquery.tablesort.min.js")"></script>
+  <script type="text/javascript" src="@routes.WidgetController.javascriptRoutes"></script>
+  <script type="text/javascript">
+    function numberWithCommas(x) {
+        var parts = x.toString().split(".");
+        parts[0] = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+        return parts.join(".");
+    }
+
+    function reformat(obj) {
+      obj.value = `\$${ numberWithCommas(Math.floor(obj.value.replace(/[^\d\.]/g, '')))}`
+    }
+  </script>
+
   @helper.form(postUrl) {
-
-    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.2.1/jquery.min.js"></script> 
-    <script src="@routes.Assets.at("javascripts/jquery.autocomplete.js")"></script>
-    <script src="@routes.Assets.at("javascripts/semantic.min.js")"></script>
-    <script src="@routes.Assets.at("javascripts/jquery.tablesort.min.js")"></script>
-    <script type="text/javascript" src="@routes.WidgetController.javascriptRoutes"></script>
-
     @helper.CSRF.formField
-
     Rent between
-    @minimal.inputText(field = form("rentlo"), args = 'size -> 10)(handler = fc_check, implicitly[Messages])
+    @minimal.inputText(field = form("rentlo"), args = 'size -> 10)(handler = fc_price, implicitly[Messages])
     and     
-    @minimal.inputText(field = form("renthi"), args = 'size -> 10)(handler = fc_check, implicitly[Messages])
+    @minimal.inputText(field = form("renthi"), args = 'size -> 10)(handler = fc_price, implicitly[Messages])
     in 
-    @minimal.inputDropdown(field = form("autocomplete"))(handler = fc_check, implicitly[Messages])
+    @minimal.inputDropdown(field = form("autocomplete"), prepop = if(form("autocomplete").value.exists(_.trim.nonEmpty)) form("autocomplete").value.get.split(",") else configuration.getString("dropdown_prepopulate").getOrElse("").split(","))(handler = fc_price, implicitly[Messages])
 
     <script>
     $('.ui.dropdown').dropdown({
-        apiSettings: {
-          url: '/autocomplete?query={query}'
-        },
         minCharacters: 2,
-        keepOnScreen: false,
-        placeholder: "e.g., Manhattan",
-    })
-    ;
+    });
 
     function NonemptyAutocomplete() {
       if (!$('#autocomplete').val()) {
@@ -70,7 +57,7 @@
 
     </script>
 
-    @minimal.inputCheckboxGroup(form("checkbeds"), options = checkbeds.map(g => g.value.toString -> g.name))(handler = fc_check, implicitly[Messages])
+    @minimal.inputCheckboxGroup(form("checkbeds"), options = checkbeds.map(g => g.value.toString -> g.name))(handler = fc_price, implicitly[Messages])
 
     <button onclick="NonemptyAutocomplete()" class="ui primary button">Update</button>
     <hr/>
