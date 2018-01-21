@@ -1,5 +1,7 @@
 package models
 
+import org.mongodb.morphia.annotations.Entity
+
 /**
  * Presentation object used for displaying data in a template.
  *
@@ -7,6 +9,7 @@ package models
  * which are used for reads, distinct from the form processing DTO,
  * which are used for writes.
  */
+@Entity("searches")
 case class Widget(bedrooms: Set[Int], rentlo: Int, renthi: Int, places: Set[String])
 {
 }

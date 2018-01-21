@@ -5691,6 +5691,10 @@ $.fn.dropdown = function(parameters) {
           },
 
           keydown: function(event) {
+            // hack to avoid selecting Manhattan on a fast-type
+            if (module.get.query().length < 2) {
+              module.filterItems();
+            }
             var
               pressedKey    = event.which,
               isShortcutKey = module.is.inObject(pressedKey, keys)

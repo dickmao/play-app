@@ -27,7 +27,7 @@ class WidgetController @Inject() (environment: play.api.Environment, configurati
 
   private var fieldsById = List[Map[String,String]]()
   private val postUrl = routes.WidgetController.Update()
-  private val rediscp = new RedisClientPool(configuration.getString("redis.hostname").getOrElse("redis"),
+  private val rediscp = new RedisClientPool(configuration.getString("redis.host").getOrElse("redis"),
     configuration.getInt("redis.port").getOrElse(6379))
 
   def Test = Action { implicit request: Request[AnyContent] =>
@@ -51,7 +51,7 @@ class WidgetController @Inject() (environment: play.api.Environment, configurati
   def fetch = Action { implicit request: Request[AnyContent] => 
     val prefix = request.getQueryString("query").get.toLowerCase()
     val names = if (prefix.isEmpty) configuration.getString("dropdown_prepopulate").getOrElse("").split(",").toList.map(name => s"$name:$name") else rediscp.withClient { client => {
-        client.zrangebylex("geoitem.index.name", "[%s".format(prefix), "(%s{".format(prefix), Some((0,10))).getOrElse(List()).sortBy(x => client.hget("geoitem." + client.smembers("georitem." + x.split(":")(1)).get.flatten.reduceLeft(popmax), "population").get.toInt)(Ordering[Int].reverse)
+        client.zrangebylex("geoitem.index.name", "[%s".format(prefix), "(%s{".format(prefix), Some((0,7))).getOrElse(List()).sortBy(x => client.hget("geoitem." + client.smembers("georitem." + x.split(":")(1)).get.flatten.reduceLeft(popmax), "population").get.toInt)(Ordering[Int].reverse)
       }
     }
     Ok(Json.toJson(Map("results" -> names.map(name => Map("name" -> name.split(":")(1),
@@ -106,6 +106,7 @@ class WidgetController @Inject() (environment: play.api.Environment, configurati
           val proximate = rediscp.withClient {
             _.georadius("item.geohash.coords", p0_fields("longitude"), p0_fields("latitude"), dist, "km", true, false, false, None, None, None, None).getOrElse(List()).flatten
           }
+
           val proximate_and_colocal = rediscp.withClient {
             client => {
               proximate.filter(p1 => p0_fields("admin2code") == client.hget("geoitem." + nyp.nearestPlace(p1.coords.get._2.toDouble, p1.coords.get._1.toDouble).id, "admin2code").getOrElse(""))

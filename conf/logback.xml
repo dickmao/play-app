@@ -8,9 +8,10 @@
     </encoder>
   </appender>
 
+
+  <logger name="reactivemongo" level="INFO" />
   <logger name="play" level="INFO" />
   <logger name="application" level="DEBUG" />
-
   <logger name="com.gargoylesoftware.htmlunit.javascript" level="OFF" />
 
   <root level="WARN">

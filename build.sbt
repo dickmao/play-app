@@ -84,7 +84,10 @@ libraryDependencies ++= Seq(
   "net.debasishg" %% "redisclient" % "3.4",
   "com.google.maps" % "google-maps-services" % "0.2.4",
   "OfflineReverseGeocode" % "OfflineReverseGeocode" % "1.0-SNAPSHOT",
-  "com.github.nscala-time" %% "nscala-time" % "2.16.0"
+  "com.github.nscala-time" %% "nscala-time" % "2.16.0",
+  "org.reactivemongo" %% "play2-reactivemongo" % "0.12.6-play25",
+  "org.mongodb.scala" %% "mongo-scala-driver" % "2.2.0",
+  "org.mongodb.morphia" % "morphia" % "1.3.2"
 )
 
 lazy val root = (project in file(".")).enablePlugins(PlayScala)

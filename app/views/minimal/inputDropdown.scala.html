@@ -9,17 +9,12 @@
  * @param field The form field.
  * @param handler The field constructor.
  *@
-@(field: play.api.data.Field, prepop: Seq[String], args: (Symbol,Any)*)(implicit handler: helper.FieldConstructor, messages: play.api.i18n.Messages)
+@(field: play.api.data.Field, args: (Symbol,Any)*)(implicit handler: helper.FieldConstructor, messages: play.api.i18n.Messages)
 
 @helper.input(field, args:_*) { (id, name, value, htmlArgs) =>
     <div class="ui fluid multiple search selection dropdown" @toHtmlArgs(htmlArgs)>
-      <input type="hidden" id="@id"  name="@name">
+      <input type="hidden" id="@id" name="@name" value="@field.value.getOrElse("")">
       <div class="default text">e.g., Manhattan</div>
       <i class="dropdown icon"></i>
-      <div class="menu">
-        @prepop.map { v =>
-           <div class="item" data-value="@v">@v</div>
-        }
-      </div>
     </div>
 }
