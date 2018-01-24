@@ -10,10 +10,10 @@ import org.mongodb.morphia.annotations.Entity
  * which are used for writes.
  */
 @Entity("searches")
-case class Widget(bedrooms: Set[Int], rentlo: Int, renthi: Int, places: Set[String])
+case class Query(bedrooms: Set[Int], rentlo: Int, renthi: Int, places: Set[String])
 {
 }
 
-object Widget {
+object Query {
   val TooDear = "$7000"
 }

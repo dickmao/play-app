@@ -2,7 +2,7 @@ package controllers
 import play.api.data.Forms._
 import play.api.data.Form
 
-object WidgetForm {
+object QueryForm {
 
 
   /**
@@ -24,7 +24,7 @@ object WidgetForm {
       "rentlo" -> optional(text),
       "renthi" -> optional(text),
       "autocomplete" -> nonEmptyText
-    )(Data.apply)(Data.unapply)).fill(WidgetForm.Data(List(0), Some("$500"), Some("$4,000"), ""))
+    )(Data.apply)(Data.unapply)).fill(QueryForm.Data(List(0), Some("$500"), Some("$4,000"), ""))
 
   case class CheckBeds(value: Int, name: String)
   val checkbeds = Seq(CheckBeds(0, "0-1BR"), CheckBeds(2, "2BR+"))

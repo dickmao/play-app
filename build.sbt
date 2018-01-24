@@ -118,5 +118,5 @@ javaOptions in Universal ++= Seq(
   "-DapplyEvolutions.default=true"
 )
 
-import play.sbt.routes.RouteKeys
+import play.sbt.routes.RoutesKeys
 RoutesKeys.routesImport += "play.modules.reactivemongo.PathBindables._"

@@ -2,7 +2,7 @@ package controllers
 
 import javax.inject.Inject
 
-import models.Widget
+import models.Query
 import play.api.data._
 import play.api.i18n._
 import play.api.mvc._
@@ -17,16 +17,16 @@ import geocode._
 import com.redis._
 
 /**
- * The classic WidgetController using I18nSupport.
+ * The classic QueryController using I18nSupport.
  *
  * I18nSupport provides implicits that create a Messages instances from
  * a request using implicit conversion.
   */
-class WidgetController @Inject() (environment: play.api.Environment, configuration: play.api.Configuration, val messagesApi: MessagesApi) extends Controller with I18nSupport {
-  import WidgetForm._
+class QueryController @Inject() (environment: play.api.Environment, configuration: play.api.Configuration, val messagesApi: MessagesApi) extends Controller with I18nSupport {
+  import QueryForm._
 
   private var fieldsById = List[Map[String,String]]()
-  private val postUrl = routes.WidgetController.Update()
+  private val postUrl = routes.QueryController.Update()
   private val rediscp = new RedisClientPool(configuration.getString("redis.host").getOrElse("redis"),
     configuration.getInt("redis.port").getOrElse(6379))
 
@@ -61,7 +61,7 @@ class WidgetController @Inject() (environment: play.api.Environment, configurati
   def javascriptRoutes = Action { implicit request: Request[AnyContent] =>
     Ok(
         JavaScriptReverseRouter("jsRoutes")(
-          routes.javascript.WidgetController.fetch
+          routes.javascript.QueryController.fetch
         )
     ).as("text/javascript")
   }
@@ -75,7 +75,7 @@ class WidgetController @Inject() (environment: play.api.Environment, configurati
     val successFunction = { data: Data =>
       form = form.fill(data)
       val ilo = data.rentlo.getOrElse("$0").replaceAll("\\D+", "").toInt
-      val ihi = data.renthi.getOrElse(Widget.TooDear).replaceAll("\\D+", "").toInt
+      val ihi = data.renthi.getOrElse(Query.TooDear).replaceAll("\\D+", "").toInt
       val (small, big) = (Set(0,1), Set(2,3,4,5))
       val bedrooms = Set[Int]() ++ (if (data.bedrooms.contains(0)) small else Set()) ++ (if (data.bedrooms.contains(2)) big else Set())
       val places = data.autocomplete.split(",").map(_.toLowerCase).toSet
@@ -120,7 +120,7 @@ class WidgetController @Inject() (environment: play.api.Environment, configurati
         client => { results.toList.map(x => client.hgetall1("item." + x).get).sortBy(x => ISODateTimeFormat.dateTimeParser().parseDateTime(x("posted")))(DateTimeOrdering.reverse) }
       }
 
-      Redirect(routes.WidgetController.Query())
+      Redirect(routes.QueryController.Query())
     }
     form.bindFromRequest.fold(errorFunction, successFunction)
   }
