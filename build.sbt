@@ -118,5 +118,7 @@ javaOptions in Universal ++= Seq(
   "-DapplyEvolutions.default=true"
 )
 
+
+// allow BSONObjectID as a first-class type in routes
 import play.sbt.routes.RoutesKeys
 RoutesKeys.routesImport += "play.modules.reactivemongo.PathBindables._"
