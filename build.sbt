@@ -10,7 +10,7 @@ playStageSecret := {
   import play.sbt.PlayImport._
   val result = PlayKeys.generateSecret.value
   val file = baseDirectory.value / "conf" / "production.conf"
-  IO.write(file, s"""include "application.conf"\nplay.crypto.secret="$result"\n""")
+  IO.write(file, s"""include "application.conf"\nmongodb.uri = "mongodb://mongodb:27017/morphia_example"\nplay.crypto.secret="$result"\n""")
 }
 
 lazy val removeOldImage = taskKey[Unit]("Remove old image to avoid danglers")
@@ -94,7 +94,7 @@ lazy val root = (project in file(".")).enablePlugins(PlayScala)
 
 
 
-initialCommands := """
+initialCommands in console := """
 |import com.redis._
 |import geocode._
 |val rediscp = new RedisClientPool("localhost", 6379)
@@ -117,3 +117,6 @@ javaOptions in Universal ++= Seq(
   // You may also want to include this setting if you use play evolutions
   "-DapplyEvolutions.default=true"
 )
+
+import play.sbt.routes.RouteKeys
+RoutesKeys.routesImport += "play.modules.reactivemongo.PathBindables._"

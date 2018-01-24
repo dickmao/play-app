@@ -2,11 +2,14 @@
 # This file defines all application routes (Higher priority routes first)
 # ~~~~
 
+GET     /*path/                     controllers.ReactiveMongoController.untrail(path: String)
 GET     /                           controllers.WidgetController.Query
 GET     /test                       controllers.WidgetController.Test
 GET     /javascriptRoutes           controllers.WidgetController.javascriptRoutes
 GET     /autocomplete               controllers.WidgetController.fetch
 POST    /                           controllers.WidgetController.Update
+GET     /mongo                      controllers.ReactiveMongoController.index
+GET     /mongo/:id                  controllers.ReactiveMongoController.findByName(id: String)
 
 # Map static resources from the /public folder to the /assets URL path
 GET     /assets/*file               controllers.Assets.at(path="/public", file)
