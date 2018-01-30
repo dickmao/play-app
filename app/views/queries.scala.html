@@ -1,0 +1,20 @@
+@import helper._
+@import reactivemongo.bson.BSONObjectID
+@(uid: BSONObjectID, queries: List[models.Query])(implicit r: RequestHeader)
+
+@main("Searches") {
+  <div class="row">
+    <div class="span12">
+      <h2>Stored searches</h2>
+      @if(queries.isEmpty) {
+        <p>No queries available yet.</p>
+      } else {
+      <ul>
+      @queries.map { query =>
+        <li>created: @org.joda.time.format.DateTimeFormat.forPattern("MMM dd, yyyy").print(query.createdAt) - <a href="@helper.CSRF(routes.UserController.delete(uid, query.id))" class="delete">delete</a></li>
+      }
+      </ul>
+      }
+    </div>
+  </div>
+}

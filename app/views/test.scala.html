@@ -1,0 +1,19 @@
+@(form: Form[Query.DTO], configuration: play.api.Configuration)(implicit request: RequestHeader, messages: Messages)
+
+@main("Welcome to Play!") {
+        <div class="ui fluid multiple search selection dropdown">
+            <input name="tags" type="hidden">
+            <div class="default text">e.g., Manhattan</div>
+            <i class="dropdown icon"></i>
+            <div class="menu" >
+                 <div class="item" data-value="angular">Item</div>
+                 <div class="item" data-value="foobot">Foobot</div>
+            </div>
+        </div>
+        <script>
+            $('.ui.dropdown').dropdown({
+                debug: false,
+            });
+        </script>
+
+}
