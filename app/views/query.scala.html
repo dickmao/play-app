@@ -1,11 +1,11 @@
-@(form: Form[WidgetForm.Data], postUrl: Call, checkbeds: Seq[WidgetForm.CheckBeds], configuration: play.api.Configuration, fieldsById: List[Map[String, String]])(implicit request: RequestHeader, messages: Messages)
+@(form: Form[Query], UpdateCall: Call, EmailCall: Call, fieldsById: List[Map[String, String]])(implicit configuration: play.api.Configuration, request: RequestHeader, messages: Messages)
 
 @import views.minimal._
 @import com.github.nscala_time.time.Imports._
 @import org.joda.time.format.ISODateTimeFormat
+@import models._
 
 @fc_price = @{ helper.FieldConstructor(minimal.priceFieldConstructor.f) }
-
 @main("Keeyosk") {
   @* Flash shows updates to a page *@
   @request.flash.data.map{ case (foo, bar) =>
@@ -22,7 +22,8 @@
   }
 
   <script src="@routes.Assets.at("javascripts/jquery.tablesort.min.js")"></script>
-  <script type="text/javascript" src="@routes.WidgetController.javascriptRoutes"></script>
+  <script src="@routes.Assets.at("javascripts/js.cookie.js")"></script>
+  <script type="text/javascript" src="@routes.QueryController.javascriptRoutes"></script>
   <script type="text/javascript">
     function numberWithCommas(x) {
         var parts = x.toString().split(".");
@@ -35,36 +36,122 @@
     }
   </script>
 
-  @helper.form(postUrl) {
+  <div class="ui basic modal">
+    <div class="content">
+      <p>
+        <form class="ui form segment" onsubmit=" $('#approve').click() ; return false " >
+          <div class="field">
+            <label>Email address</label>
+            <div class="ui small input">
+              <input type="text" name="email" onkeydown = "if(event.keyCode==13) document.getElementById('approve').click()">
+            </div>
+          </div>
+        </form>
+      </p>
+    </div>
+    <div class="actions">
+      <div class="ui cancel button">Cancel</div>
+      <div class="ui approve button" id="approve">Done</div>
+    </div>
+  </div>
+
+  @helper.form(action = UpdateCall, args = 'class -> "my form") {
     @helper.CSRF.formField
     Rent
-    @minimal.inputCheckboxGroup(form("checkbeds"), options = checkbeds.map(g => g.value.toString -> g.name))(handler = fc_price, implicitly[Messages])
+    @minimal.inputCheckboxGroup(form("checkbeds"), options = Query.checkbeds.map(g => g.value.toString -> g.name))(handler = fc_price, implicitly[Messages])
     in 
-    @minimal.inputDropdown(field = form("autocomplete"))(handler = fc_price, implicitly[Messages])
+    @minimal.inputDropdown(field = form("autocomplete"), prepop = configuration.getString("dropdown_prepopulate").getOrElse("").split(",").toList)(handler = fc_price, implicitly[Messages])
     between
     @minimal.inputText(field = form("rentlo"), args = 'size -> 10)(handler = fc_price, implicitly[Messages])
     and     
     @minimal.inputText(field = form("renthi"), args = 'size -> 10)(handler = fc_price, implicitly[Messages])
 
     <script>
-    $('.ui.dropdown').dropdown({
-      apiSettings: {
-        url: '/autocomplete?query={query}'
-      },
-      keepOnScreen: false,
-    });
-
     function NonemptyAutocomplete() {
       if (!$('#autocomplete').val()) {
-        $('#autocomplete').val("Manhattan");
+        $('#autocomplete').val('@configuration.getString("dropdown_prepopulate").getOrElse("").split(",").toList.headOption.getOrElse("Manhattan")');
       }
       if (!$("input[name='checkbeds[]']:checked").length) {
         $('#checkbeds_0').prop("checked", true);
       }
     }
+
+    $(document).ready(function() {
+      if( Cookies.get('email') ) {
+        $('.my.form input[name=email]').val(Cookies.get('email'))
+      }
+
+      $('.ui.form').form({
+        on: 'blur',
+        fields: {
+          email: {
+            rules: [
+              {
+                type: 'email'
+              }
+            ]
+          }
+        }
+      });
+
+
+      var dropdown_params = {
+        apiSettings: {
+          url: '/autocomplete?query={query}'
+        },
+        keepOnScreen: false,
+      };
+
+      $('.ui.dropdown').dropdown(dropdown_params);
+
+      if( $('.my.form input[name=autocomplete]').val() != '' ) {
+        var menu = $('.dropdown').find('.menu');
+        menu.html('');
+        var prepops = $('.my.form input[name=autocomplete]').val().split(/,/);
+        for (var i=0; i<prepops.length; i++) {
+          menu.append('<div class="item" data-value="' + prepops[i] + '">' + prepops[i] + '</div>');
+        }
+        $('.dropdown').dropdown('refresh');
+        $('.dropdown').dropdown('set selected', prepops);
+      }
+
+      function emailSubmit() {
+        Cookies.set('email', $('.my.form input[name=email]').val());
+        $('.my.form').attr("action", "@EmailCall.path");
+        $('.my.form').attr("method", "@EmailCall.method");
+        $('.my.form').submit();
+      }
+
+      $('.ui.secondary.button').on("click", function(e) {
+        e.preventDefault();
+        NonemptyAutocomplete();
+
+        // if f() { g() h() } else h() instead of if f() { g() } h() 
+        if( $('.my.form input[name=email]').val() == '' ) {
+          $('.ui.basic.modal')
+            .modal({
+              onApprove: function() {
+                if( $('.ui.form').form('is valid', 'email') ) {
+                  $('.my.form input[name=email]').val($('.ui.form').form('get value', 'email'));
+                  emailSubmit();
+                } else {
+                  return false;
+                }
+              }
+            })
+            .modal('show')
+          ;
+        } else {
+          emailSubmit();
+        }
+      });
+    });
+
     </script>
 
+    <input name=email type="hidden" value = ""/>
     <button onclick="NonemptyAutocomplete()" class="ui primary button">Update</button>
+    <button class="ui secondary button">Email</button>
     <hr/>
 
     @if(!fieldsById.isEmpty) {

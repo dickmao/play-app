@@ -2,7 +2,7 @@ package controllers
 
 import javax.inject.Inject
 
-import models.Query
+import models._
 import play.api.data._
 import play.api.i18n._
 import play.api.mvc._
@@ -10,7 +10,6 @@ import play.api.libs.json._
 import play.api.Logger
 import play.api.{ Configuration, Environment }
 import play.api.routing._
-import scala.collection.immutable._
 import com.github.nscala_time.time.Imports._
 import org.joda.time.format.ISODateTimeFormat
 import geocode._
@@ -23,19 +22,16 @@ import com.redis._
  * a request using implicit conversion.
   */
 class QueryController @Inject() (environment: play.api.Environment, configuration: play.api.Configuration, val messagesApi: MessagesApi) extends Controller with I18nSupport {
-  import QueryForm._
-
   private var fieldsById = List[Map[String,String]]()
-  private val postUrl = routes.QueryController.Update()
   private val rediscp = new RedisClientPool(configuration.getString("redis.host").getOrElse("redis"),
     configuration.getInt("redis.port").getOrElse(6379))
-
   def Test = Action { implicit request: Request[AnyContent] =>
-    Ok(views.html.test(form, configuration))
+    Ok(views.html.test(Query.form, configuration))
   }
 
-  def Query = Action { implicit request: Request[AnyContent] =>
-    Ok(views.html.query(form, postUrl, checkbeds, configuration, fieldsById))
+  def QueryAction = Action { implicit request: Request[AnyContent] =>
+    implicit lazy val config = configuration
+    Ok(views.html.query(Query.form, routes.QueryController.Update(), routes.UserController.Email(), fieldsById))
   }
 
   def popmax(id1: String, id2: String) : String = {
@@ -48,7 +44,7 @@ class QueryController @Inject() (environment: play.api.Environment, configuratio
     return if (f1("population").toInt > f2("population").toInt) id1 else id2
   }
 
-  def fetch = Action { implicit request: Request[AnyContent] => 
+  def fetch = Action { implicit request: Request[AnyContent] =>
     val prefix = request.getQueryString("query").get.toLowerCase()
     val names = if (prefix.isEmpty) configuration.getString("dropdown_prepopulate").getOrElse("").split(",").toList.map(name => s"$name:$name") else rediscp.withClient { client => {
         client.zrangebylex("geoitem.index.name", "[%s".format(prefix), "(%s{".format(prefix), Some((0,7))).getOrElse(List()).sortBy(x => client.hget("geoitem." + client.smembers("georitem." + x.split(":")(1)).get.flatten.reduceLeft(popmax), "population").get.toInt)(Ordering[Int].reverse)
@@ -68,26 +64,24 @@ class QueryController @Inject() (environment: play.api.Environment, configuratio
 
   // This will be the action that handles our form post
   def Update = Action { implicit request: Request[AnyContent] =>
-    val errorFunction = { formWithErrors: Form[Data] =>
-      BadRequest(views.html.query(formWithErrors, postUrl, checkbeds, configuration, fieldsById))
+    val errorFunction = { formWithErrors: Form[Query] =>
+      implicit lazy val config = configuration
+      BadRequest(views.html.query(formWithErrors, routes.QueryController.Update(), routes.UserController.Email(), fieldsById))
     }
 
-    val successFunction = { data: Data =>
-      form = form.fill(data)
-      val ilo = data.rentlo.getOrElse("$0").replaceAll("\\D+", "").toInt
-      val ihi = data.renthi.getOrElse(Query.TooDear).replaceAll("\\D+", "").toInt
+    val successFunction = { query: Query =>
+      Query.form = Query.form.fill(query)
       val (small, big) = (Set(0,1), Set(2,3,4,5))
-      val bedrooms = Set[Int]() ++ (if (data.bedrooms.contains(0)) small else Set()) ++ (if (data.bedrooms.contains(2)) big else Set())
-      val places = data.autocomplete.split(",").map(_.toLowerCase).toSet
+      val bedrooms = Set[Int]() ++ (if (query.bedrooms.contains(0)) small else Set()) ++ (if (query.bedrooms.contains(2)) big else Set())
       val byprice = rediscp.withClient {
-        _.zrangebyscore("item.index.price", ilo.min(ihi).toDouble, true, ihi.max(ilo).toDouble, true, None).getOrElse(List())
+        _.zrangebyscore("item.index.price", query.rentlo.min(query.renthi).toDouble, true, query.renthi.max(query.rentlo).toDouble, true, None).getOrElse(List())
       }
       val bybeds = rediscp.withClient {
         _.zrangebyscore("item.index.bedrooms", bedrooms.min.toDouble, true, bedrooms.max.toDouble, true, None).getOrElse(List())
       }
 
       val results = scala.collection.mutable.Set.empty[String]
-      for (place <- places) {
+      for (place <- query.places.map(_.toLowerCase)) {
         val matches = rediscp.withClient {
           _.zrangebylex("geoitem.index.name", "[%s".format(place), "(%s{".format(place), None).getOrElse(List[String]())
         }
@@ -109,6 +103,10 @@ class QueryController @Inject() (environment: play.api.Environment, configuratio
 
           val proximate_and_colocal = rediscp.withClient {
             client => {
+              // proximate.foreach(p1 => {
+              //   val geoid = nyp.nearestPlace(p1.coords.get._2.toDouble, p1.coords.get._1.toDouble).id
+              //   Logger.debug("geoitem.%s %s %s".format(geoid, client.hget("geoitem." + geoid, "admin2code").getOrElse(""), client.hget("geoitem." + geoid, "name")))
+              // })
               proximate.filter(p1 => p0_fields("admin2code") == client.hget("geoitem." + nyp.nearestPlace(p1.coords.get._2.toDouble, p1.coords.get._1.toDouble).id, "admin2code").getOrElse(""))
             }
           }
@@ -120,8 +118,9 @@ class QueryController @Inject() (environment: play.api.Environment, configuratio
         client => { results.toList.map(x => client.hgetall1("item." + x).get).sortBy(x => ISODateTimeFormat.dateTimeParser().parseDateTime(x("posted")))(DateTimeOrdering.reverse) }
       }
 
-      Redirect(routes.QueryController.Query())
+      Redirect(routes.QueryController.QueryAction())
     }
-    form.bindFromRequest.fold(errorFunction, successFunction)
+
+    Query.form.bindFromRequest.fold(errorFunction, successFunction)
   }
 }

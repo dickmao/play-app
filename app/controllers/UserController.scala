@@ -7,6 +7,7 @@ import javax.inject.Inject
 import models._
 import org.joda.time.DateTime
 import play.api.Logger
+import play.api.{ Configuration, Environment }
 import play.api.data.Form
 import play.api.i18n._
 import play.api.libs.concurrent.Execution.Implicits.defaultContext
@@ -21,7 +22,7 @@ import reactivemongo.bson.BSONObjectID
 import reactivemongo.play.json._
 import reactivemongo.play.json.collection._
 
-class UserController @Inject() (val reactiveMongoApi: ReactiveMongoApi, val messagesApi: MessagesApi) extends Controller with MongoController with ReactiveMongoComponents with I18nSupport {
+class UserController @Inject() (environment: play.api.Environment, configuration: play.api.Configuration, val reactiveMongoApi: ReactiveMongoApi, val messagesApi: MessagesApi) extends Controller with MongoController with ReactiveMongoComponents with I18nSupport {
   /*
    * Note that the `collection` is not a `val`, but a `def`. We do _not_ store
    * the collection reference to avoid potential problems in development with
@@ -42,7 +43,7 @@ class UserController @Inject() (val reactiveMongoApi: ReactiveMongoApi, val mess
           BadRequest(e.getMessage())
       }
     }.getOrElse {
-      Future.successful(Unauthorized("Oops, I don't have your email."))
+      Future.successful(Ok(views.html.queries(BSONObjectID.generate(), List.empty)))
     }
   }
 
@@ -51,13 +52,20 @@ class UserController @Inject() (val reactiveMongoApi: ReactiveMongoApi, val mess
   }
 
   def Email = Action { implicit request: Request[AnyContent] =>
-    val errorFunction = { formWithErrors: Form[Query.DTO] =>
+    val errorFunction = { formWithErrors: Form[Query] =>
+      implicit lazy val config = configuration
       BadRequest(views.html.query(formWithErrors, routes.QueryController.Update(), routes.UserController.Email(), List.empty[Map[String, String]]))
     }
 
-    val successFunction = { data: Query.DTO =>
-      Query.form = Query.form.fill(data)
-      Redirect(routes.UserController.index())
+    val successFunction = { query: Query =>
+      Query.form = Query.form.fill(query)
+      val modifier = Json.obj("$push" -> Json.obj("queries" -> Json.toJson(query)))
+      collection.flatMap(col => col.update(Json.obj("email" -> query.email), modifier, col.db.connection.options.writeConcern, true)).map {
+        lastError =>
+        Logger.debug(s"Successfully inserted with LastError: $lastError")
+        Created
+      }
+      Redirect(routes.UserController.index)
     }
 
     Query.form.bindFromRequest.fold(errorFunction, successFunction)
@@ -113,7 +121,7 @@ class UserController @Inject() (val reactiveMongoApi: ReactiveMongoApi, val mess
     request.body.transform(transformer).map { result =>
       val query = Query(BSONObjectID.generate(), (result \ "bedrooms").validate[Set[Int]].get,
         (result \ "rentlo").validate[Int].get, (result \ "renthi").validate[Int].get,
-        (result \ "places").validate[Set[String]].get, DateTime.now())
+        (result \ "places").validate[Set[String]].get, DateTime.now(), new DateTime(), (result \ "email").validate[String].get)
       val modifier = Json.obj("$push" -> Json.obj("queries" -> Json.toJson(query)))
       collection.flatMap(_.findAndUpdate(Json.obj("email" -> "alicia.shi@gmail.com"), modifier, true, true)
         .map { lastError =>

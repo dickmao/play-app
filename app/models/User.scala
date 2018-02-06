@@ -16,6 +16,6 @@ object User {
   implicit val UserFormat: OFormat[User] = (
     (__ \ "_id").format[BSONObjectID] and
       (__ \ "email").format[String](Reads.email) and
-      (__ \ "queries").format[List[Query]](Reads.minLength[List[Query]](1))
+      (__ \ "queries").format[List[Query]]
   )(User.apply, unlift(User.unapply))
 }

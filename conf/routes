@@ -2,14 +2,16 @@
 # This file defines all application routes (Higher priority routes first)
 # ~~~~
 
-GET     /*path/                     controllers.ReactiveMongoController.untrail(path: String)
-GET     /                           controllers.QueryController.Query
+GET     /*path/                     controllers.UserController.untrail(path: String)
+GET     /                           controllers.QueryController.QueryAction
 GET     /test                       controllers.QueryController.Test
 GET     /javascriptRoutes           controllers.QueryController.javascriptRoutes
 GET     /autocomplete               controllers.QueryController.fetch
 POST    /                           controllers.QueryController.Update
-GET     /mongo                      controllers.ReactiveMongoController.index
-GET     /mongo/:id                  controllers.ReactiveMongoController.findByName(id: reactivemongo.bison.BSONObjectID)
-
+GET     /mongo                      controllers.UserController.index
+GET     /mongo/:email               controllers.UserController.get(email: String)
+POST    /mongo/createjson           controllers.UserController.createFromJson
+POST    /mongo/create               controllers.UserController.Email
+GET     /mongo/delete/:uid/:qid     controllers.UserController.delete(uid: reactivemongo.bson.BSONObjectID, qid: reactivemongo.bson.BSONObjectID)
 # Map static resources from the /public folder to the /assets URL path
 GET     /assets/*file               controllers.Assets.at(path="/public", file)

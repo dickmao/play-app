@@ -22,7 +22,7 @@
   <span class="buttonset" id="@id">
     @defining(field.indexes.map( i => field("[%s]".format(i)).value ).flatten.toSet) { values =>
       @options.map { v =>
-        <div id="minck">
+        <div class="ck-button">
           <label>
             <input type="checkbox" id="@(id)_@v._1" name="@{name + "[]"}" value="@v._1" @if(values.contains(v._1)){checked="checked"} @toHtmlArgs(htmlArgs)/>
             <span for="@(id)_@v._1">@v._2</span>

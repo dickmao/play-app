@@ -4,6 +4,9 @@ scalaVersion := "2.11.11"
 dockerRepository := Some("303634175659.dkr.ecr.us-east-2.amazonaws.com")
 dockerExposedPorts := Seq(9000)
 
+import play.sbt.routes.RoutesKeys
+RoutesKeys.routesImport += "play.modules.reactivemongo.PathBindables._"
+
 lazy val playStageSecret = taskKey[Unit]("Runs playGenerateSecret and puts output in conf as production.conf")
 
 playStageSecret := {
@@ -75,6 +78,8 @@ mappings in Universal := (mappings in Universal).value filter {
 
 
 resolvers += Resolver.mavenLocal
+resolvers += "scalaz-bintray" at "http://dl.bintray.com/scalaz/releases"
+
 libraryDependencies ++= Seq(
   filters,
   "org.scalatestplus.play" %% "scalatestplus-play" % "2.0.0" % "test",
@@ -86,13 +91,37 @@ libraryDependencies ++= Seq(
   "OfflineReverseGeocode" % "OfflineReverseGeocode" % "1.0-SNAPSHOT",
   "com.github.nscala-time" %% "nscala-time" % "2.16.0",
   "org.reactivemongo" %% "play2-reactivemongo" % "0.12.6-play25",
-  "org.mongodb.scala" %% "mongo-scala-driver" % "2.2.0",
-  "org.mongodb.morphia" % "morphia" % "1.3.2"
+  "org.specs2" %% "specs2-core" % "4.0.2" % "test",
+  "org.scalatest" % "scalatest_2.12" % "3.0.4" % "test"
 )
 
 lazy val root = (project in file(".")).enablePlugins(PlayScala)
 
-
+initialCommands in console := """
+|import scala.concurrent.Future
+|import scala.language.postfixOps
+|import javax.inject.Inject
+|import models._
+|import org.joda.time.DateTime
+|import play.api.Logger
+|import play.api.data.Form
+|import play.api.i18n._
+|import play.api.libs.concurrent.Execution.Implicits.defaultContext
+|import play.api.libs.functional.syntax._
+|import play.api.libs.json._
+|import play.api.mvc._
+|import play.modules.reactivemongo.{MongoController, ReactiveMongoApi, ReactiveMongoComponents}
+|import reactivemongo.api.{Cursor, ReadPreference, MongoConnection}
+|import reactivemongo.play.json._
+|import reactivemongo.play.json.collection._
+|val driver1 = new reactivemongo.api.MongoDriver
+|val connection3 = driver1.connection(List("localhost"))
+|def dbFromConnection(connection: MongoConnection): Future[JSONCollection] =
+|  connection.database("keeyosk").
+|    map(_.collection("users"))
+|val futcursor = dbFromConnection(connection3).map(_.find(Json.obj("email" -> "alicia.shi@gmail.com")).cursor[User](ReadPreference.primary))
+|scala.concurrent.Await.ready(futcursor.flatMap(_.collect[List](-1, Cursor.FailOnError[List[User]]())), scala.concurrent.duration.Duration.Inf).value
+""".stripMargin
 
 initialCommands in console := """
 |import com.redis._
@@ -118,7 +147,3 @@ javaOptions in Universal ++= Seq(
   "-DapplyEvolutions.default=true"
 )
 
-
-// allow BSONObjectID as a first-class type in routes
-import play.sbt.routes.RoutesKeys
-RoutesKeys.routesImport += "play.modules.reactivemongo.PathBindables._"

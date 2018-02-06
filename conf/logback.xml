@@ -10,7 +10,7 @@
 
 
   <logger name="reactivemongo" level="INFO" />
-  <logger name="play" level="INFO" />
+  <logger name="play" level="DEBUG" />
   <logger name="application" level="DEBUG" />
   <logger name="com.gargoylesoftware.htmlunit.javascript" level="OFF" />
 
