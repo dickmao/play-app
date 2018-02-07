@@ -8,8 +8,8 @@ GET     /test                       controllers.QueryController.Test
 GET     /javascriptRoutes           controllers.QueryController.javascriptRoutes
 GET     /autocomplete               controllers.QueryController.fetch
 POST    /                           controllers.QueryController.Update
-GET     /mongo                      controllers.UserController.index
-GET     /mongo/:email               controllers.UserController.get(email: String)
+GET     /mongo/getEmail/:email      controllers.UserController.getEmail(email: String)
+GET     /mongo/getUid/:uid          controllers.UserController.getUid(uid: reactivemongo.bson.BSONObjectID)
 POST    /mongo/createjson           controllers.UserController.createFromJson
 POST    /mongo/create               controllers.UserController.Email
 GET     /mongo/delete/:uid/:qid     controllers.UserController.delete(uid: reactivemongo.bson.BSONObjectID, qid: reactivemongo.bson.BSONObjectID)

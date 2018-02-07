@@ -26,12 +26,12 @@ class QueryController @Inject() (environment: play.api.Environment, configuratio
   private val rediscp = new RedisClientPool(configuration.getString("redis.host").getOrElse("redis"),
     configuration.getInt("redis.port").getOrElse(6379))
   def Test = Action { implicit request: Request[AnyContent] =>
-    Ok(views.html.test(Query.form, configuration))
+    Ok(views.html.test(FormDTO.form, configuration))
   }
 
   def QueryAction = Action { implicit request: Request[AnyContent] =>
     implicit lazy val config = configuration
-    Ok(views.html.query(Query.form, routes.QueryController.Update(), routes.UserController.Email(), fieldsById))
+    Ok(views.html.query(FormDTO.form, routes.QueryController.Update(), routes.UserController.Email(), fieldsById))
   }
 
   def popmax(id1: String, id2: String) : String = {
@@ -64,13 +64,13 @@ class QueryController @Inject() (environment: play.api.Environment, configuratio
 
   // This will be the action that handles our form post
   def Update = Action { implicit request: Request[AnyContent] =>
-    val errorFunction = { formWithErrors: Form[Query] =>
+    val errorFunction = { formWithErrors: Form[FormDTO] =>
       implicit lazy val config = configuration
       BadRequest(views.html.query(formWithErrors, routes.QueryController.Update(), routes.UserController.Email(), fieldsById))
     }
 
-    val successFunction = { query: Query =>
-      Query.form = Query.form.fill(query)
+    val successFunction = { query: FormDTO =>
+      FormDTO.form = FormDTO.form.fill(query)
       val (small, big) = (Set(0,1), Set(2,3,4,5))
       val bedrooms = Set[Int]() ++ (if (query.bedrooms.contains(0)) small else Set()) ++ (if (query.bedrooms.contains(2)) big else Set())
       val byprice = rediscp.withClient {
@@ -121,6 +121,6 @@ class QueryController @Inject() (environment: play.api.Environment, configuratio
       Redirect(routes.QueryController.QueryAction())
     }
 
-    Query.form.bindFromRequest.fold(errorFunction, successFunction)
+    FormDTO.form.bindFromRequest.fold(errorFunction, successFunction)
   }
 }

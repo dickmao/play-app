@@ -1,6 +1,6 @@
 @import helper._
 @import reactivemongo.bson.BSONObjectID
-@(uid: BSONObjectID, queries: List[models.Query])(implicit r: RequestHeader)
+@(email: String, uid: BSONObjectID, queries: List[models.Query])(implicit r: RequestHeader)
 
 @main("Searches") {
   <div class="row">

@@ -1,4 +1,4 @@
-@(form: Form[Query], UpdateCall: Call, EmailCall: Call, fieldsById: List[Map[String, String]])(implicit configuration: play.api.Configuration, request: RequestHeader, messages: Messages)
+@(form: Form[FormDTO], UpdateCall: Call, EmailCall: Call, fieldsById: List[Map[String, String]])(implicit configuration: play.api.Configuration, request: RequestHeader, messages: Messages)
 
 @import views.minimal._
 @import com.github.nscala_time.time.Imports._
@@ -58,7 +58,7 @@
   @helper.form(action = UpdateCall, args = 'class -> "my form") {
     @helper.CSRF.formField
     Rent
-    @minimal.inputCheckboxGroup(form("checkbeds"), options = Query.checkbeds.map(g => g.value.toString -> g.name))(handler = fc_price, implicitly[Messages])
+    @minimal.inputCheckboxGroup(form("checkbeds"), options = FormDTO.checkbeds.map(g => g.value.toString -> g.name))(handler = fc_price, implicitly[Messages])
     in 
     @minimal.inputDropdown(field = form("autocomplete"), prepop = configuration.getString("dropdown_prepopulate").getOrElse("").split(",").toList)(handler = fc_price, implicitly[Messages])
     between

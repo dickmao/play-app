@@ -1,6 +1,7 @@
 package controllers
 
-import scala.concurrent.Future
+import scala.concurrent.duration._
+import scala.concurrent.{ Await, Future }
 import scala.language.postfixOps
 
 import javax.inject.Inject
@@ -30,76 +31,55 @@ class UserController @Inject() (environment: play.api.Environment, configuration
    */
   def collection: Future[JSONCollection] = database.map(_.collection[JSONCollection]("users"))
 
-  def index = Action.async { implicit request: Request[AnyContent] =>
-    request.session.get("email").map { email =>
-      val futcursor = collection.map(_.find(Json.obj("email" -> email)).cursor[User]())
-
-      // build (asynchronously) a list containing all the users
-      futcursor.flatMap(_.collect[List](-1, Cursor.FailOnError[List[User]]())).map { users =>
-        users.headOption map { user => Ok(views.html.queries(user.id, user.queries)) } getOrElse Ok(views.html.queries(BSONObjectID.generate(), List.empty))
-      }.recover {
-        case e =>
-          e.printStackTrace()
-          BadRequest(e.getMessage())
-      }
-    }.getOrElse {
-      Future.successful(Ok(views.html.queries(BSONObjectID.generate(), List.empty)))
-    }
-  }
-
   def untrail(path: String) = Action { 
     MovedPermanently("/" + path)
   }
 
   def Email = Action { implicit request: Request[AnyContent] =>
-    val errorFunction = { formWithErrors: Form[Query] =>
+    val errorFunction = { formWithErrors: Form[FormDTO] =>
       implicit lazy val config = configuration
       BadRequest(views.html.query(formWithErrors, routes.QueryController.Update(), routes.UserController.Email(), List.empty[Map[String, String]]))
     }
 
-    val successFunction = { query: Query =>
-      Query.form = Query.form.fill(query)
+    val successFunction = { dto: FormDTO =>
+      FormDTO.form = FormDTO.form.fill(dto)
+      val query = Query(BSONObjectID.generate(), dto.bedrooms, dto.rentlo, dto.renthi, dto.places, DateTime.now(), DateTime.now())
       val modifier = Json.obj("$push" -> Json.obj("queries" -> Json.toJson(query)))
-      collection.flatMap(col => col.update(Json.obj("email" -> query.email), modifier, col.db.connection.options.writeConcern, true)).map {
+      Await.ready(collection.flatMap(col => col.update(Json.obj("email" -> dto.email), modifier, col.db.connection.options.writeConcern, true)).map {
         lastError =>
         Logger.debug(s"Successfully inserted with LastError: $lastError")
-        Created
-      }
-      Redirect(routes.UserController.index)
+      }, 30 seconds)
+      Redirect(routes.UserController.getEmail(dto.email))
     }
-
-    Query.form.bindFromRequest.fold(errorFunction, successFunction)
+    FormDTO.form.bindFromRequest.fold(errorFunction, successFunction)
   }
+
+  def getForCursor(futcursor: Future[Cursor[User]]) = Action.async { implicit request: Request[AnyContent] =>
+    futcursor.flatMap(_.collect[List](-1, Cursor.FailOnError[List[User]]())).map { users =>
+      users.headOption map { user => Ok(views.html.queries(user.email, user.id, user.queries)) } getOrElse Ok(views.html.queries("", BSONObjectID.generate(), List.empty))
+    }.recover {
+      case e =>
+        e.printStackTrace()
+        BadRequest(e.getMessage())
+    }
+  }
+
+  def getUid(uid: reactivemongo.bson.BSONObjectID) =
+    getForCursor(collection.map(_.find(Json.obj("_id" -> Json.obj("$oid" -> uid.stringify))).cursor[User]()))
+
+  def getEmail(email: String) = 
+    getForCursor(collection.map(_.find(Json.obj("email" -> email)).cursor[User]()))
 
   def delete(
     uid: reactivemongo.bson.BSONObjectID,
     qid: reactivemongo.bson.BSONObjectID) = Action.async { request =>
-    request.session.get("email").map { email =>
-      val commandDoc = Json.obj(
-        "update" -> "users",
-        "query" -> Json.obj("email" -> email),
-        "update" -> Json.obj("$pull" -> Json.obj("queries" -> Json.obj("id" -> qid))))
-      val runner = Command.run(JSONSerializationPack, FailoverStrategy())
-      database.map(db =>
-        runner.apply(db, runner.rawCommand(commandDoc)).one[JsObject](db.connection.options.readPreference).recover {
-          case e =>
-            e.printStackTrace()
-            BadRequest(e.getMessage())
-        }
-      )
-      Future.successful(Redirect(routes.UserController.index()))
-    }.getOrElse {
-      Future.successful(Unauthorized("Oops, I don't have your email."))
-    }
-  }
 
-  def get(email: String) = Action.async {
-    val futcursor = collection.map(_.find(Json.obj("email" -> email)).cursor[User]())
-    futcursor.flatMap(_.collect[List](-1, Cursor.FailOnError[List[User]]())).map { users =>
-      Ok(Json.arr(
-        users.headOption.getOrElse(new User(BSONObjectID.generate(), "", List.empty)).queries
-      ))
-    }
+    val modifier = Json.obj("$pull" -> Json.obj("queries" -> Json.obj("_id" -> Json.obj("$oid" -> qid.stringify))))
+    Await.ready(collection.flatMap(col => col.update(Json.obj("_id" -> Json.obj("$oid" -> uid.stringify)), modifier, col.db.connection.options.writeConcern, true)).map {
+      lastError =>
+      Logger.debug(s"Successfully inserted with LastError: $lastError")
+    }, 30 seconds)
+    Future.successful(Redirect(routes.UserController.getUid(uid)))
   }
 
   def createFromJson = Action.async(parse.json) { request =>
@@ -121,7 +101,7 @@ class UserController @Inject() (environment: play.api.Environment, configuration
     request.body.transform(transformer).map { result =>
       val query = Query(BSONObjectID.generate(), (result \ "bedrooms").validate[Set[Int]].get,
         (result \ "rentlo").validate[Int].get, (result \ "renthi").validate[Int].get,
-        (result \ "places").validate[Set[String]].get, DateTime.now(), new DateTime(), (result \ "email").validate[String].get)
+        (result \ "places").validate[Set[String]].get, DateTime.now(), new DateTime())
       val modifier = Json.obj("$push" -> Json.obj("queries" -> Json.toJson(query)))
       collection.flatMap(_.findAndUpdate(Json.obj("email" -> "alicia.shi@gmail.com"), modifier, true, true)
         .map { lastError =>

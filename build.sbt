@@ -13,7 +13,7 @@ playStageSecret := {
   import play.sbt.PlayImport._
   val result = PlayKeys.generateSecret.value
   val file = baseDirectory.value / "conf" / "production.conf"
-  IO.write(file, s"""include "application.conf"\nmongodb.uri = "mongodb://mongodb:27017/morphia_example"\nplay.crypto.secret="$result"\n""")
+  IO.write(file, s"""include "application.conf"\nplay.crypto.secret="$result"\n""")
 }
 
 lazy val removeOldImage = taskKey[Unit]("Remove old image to avoid danglers")
@@ -68,14 +68,10 @@ publish in Docker := {
   (publish in Docker).value
 }
 
-// generate application secret on every docker:publish
-// find docker:publish and append a command to it
 // removes doc mappings
 mappings in Universal := (mappings in Universal).value filter {
   case (file, name) =>  ! name.startsWith("share/doc")
 }
-
-
 
 resolvers += Resolver.mavenLocal
 resolvers += "scalaz-bintray" at "http://dl.bintray.com/scalaz/releases"
