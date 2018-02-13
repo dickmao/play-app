@@ -24,7 +24,7 @@ object FormDTO {
       "rentlo" -> optional(text),
       "renthi" -> optional(text),
       "autocomplete" -> nonEmptyText,
-      "email" -> nonEmptyText
+      "email" -> text
     ) {
       (checkbeds, rentlo, renthi, autocomplete, email) =>
       val ilo = rentlo.getOrElse("$0").replaceAll("\\D+", "").toInt

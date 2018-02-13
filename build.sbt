@@ -95,8 +95,7 @@ lazy val aaaMain = (project in file("."))
 lazy val successFunction = (project in file("modules/success-function"))
   .settings(commonSettings)
   .settings(
-    publish in Docker := {},
-    publishArtifact := false
+    publish in Docker := {}
   )
 
 initialCommands in console := """
