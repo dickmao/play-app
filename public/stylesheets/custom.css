@@ -25,6 +25,10 @@ hr {
   vertical-align:middle;
 }
 
+#renthi_field {
+  margin-right: 0.25em; /* to match ui.button */
+}
+
 .ck-button {
   cursor: pointer;
   display: inline-block;

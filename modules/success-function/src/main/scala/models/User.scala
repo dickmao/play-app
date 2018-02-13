@@ -12,10 +12,13 @@ object User {
   import play.api.libs.json._
   import reactivemongo.play.json.BSONFormats.BSONObjectIDFormat
   import play.api.libs.functional.syntax._
+  import reactivemongo.bson._
 
   implicit val UserFormat: OFormat[User] = (
     (__ \ "_id").format[BSONObjectID] and
       (__ \ "email").format[String](Reads.email) and
       (__ \ "queries").format[List[Query]]
   )(User.apply, unlift(User.unapply))
+
+  implicit val UserHandler = Macros.handler[User]
 }

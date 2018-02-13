@@ -14,6 +14,7 @@ import com.github.nscala_time.time.Imports._
 import org.joda.time.format.ISODateTimeFormat
 import geocode._
 import com.redis._
+import success_function.SuccessFunction
 
 /**
  * The classic QueryController using I18nSupport.
@@ -71,53 +72,9 @@ class QueryController @Inject() (environment: play.api.Environment, configuratio
 
     val successFunction = { query: FormDTO =>
       FormDTO.form = FormDTO.form.fill(query)
-      val (small, big) = (Set(0,1), Set(2,3,4,5))
-      val bedrooms = Set[Int]() ++ (if (query.bedrooms.contains(0)) small else Set()) ++ (if (query.bedrooms.contains(2)) big else Set())
-      val byprice = rediscp.withClient {
-        _.zrangebyscore("item.index.price", query.rentlo.min(query.renthi).toDouble, true, query.renthi.max(query.rentlo).toDouble, true, None).getOrElse(List())
-      }
-      val bybeds = rediscp.withClient {
-        _.zrangebyscore("item.index.bedrooms", bedrooms.min.toDouble, true, bedrooms.max.toDouble, true, None).getOrElse(List())
-      }
-
-      val results = scala.collection.mutable.Set.empty[String]
-      for (place <- query.places.map(_.toLowerCase)) {
-        val matches = rediscp.withClient {
-          _.zrangebylex("geoitem.index.name", "[%s".format(place), "(%s{".format(place), None).getOrElse(List[String]())
-        }
-        val geonameids = rediscp.withClient {
-          client => {
-            matches.flatMap(mat => client.smembers("georitem." + mat.split(":")(1)).getOrElse(Set())).flatten
-          }
-        }
-        if (!geonameids.isEmpty) {
-          val nyp = new ReverseGeoCode(environment.resourceAsStream("NY.P.tsv").get, true)
-          val p0 = geonameids.reduceLeft(popmax)
-          val p0_fields = rediscp.withClient {
-            _.hmget("geoitem." + p0, "longitude", "latitude", "admin2code", "featurecode").get
-          }
-          val dist = if (p0_fields("featurecode").matches("PPLA.*")) 25 else 1.5
-          val proximate = rediscp.withClient {
-            _.georadius("item.geohash.coords", p0_fields("longitude"), p0_fields("latitude"), dist, "km", true, false, false, None, None, None, None).getOrElse(List()).flatten
-          }
-
-          val proximate_and_colocal = rediscp.withClient {
-            client => {
-              // proximate.foreach(p1 => {
-              //   val geoid = nyp.nearestPlace(p1.coords.get._2.toDouble, p1.coords.get._1.toDouble).id
-              //   Logger.debug("geoitem.%s %s %s".format(geoid, client.hget("geoitem." + geoid, "admin2code").getOrElse(""), client.hget("geoitem." + geoid, "name")))
-              // })
-              proximate.filter(p1 => p0_fields("admin2code") == client.hget("geoitem." + nyp.nearestPlace(p1.coords.get._2.toDouble, p1.coords.get._1.toDouble).id, "admin2code").getOrElse(""))
-            }
-          }
-          results ++= byprice.toSet.intersect(bybeds.toSet).intersect(proximate_and_colocal.map(x => x.member.get).toSet)
-        }
-      }
-
-      fieldsById = rediscp.withClient {
-        client => { results.toList.map(x => client.hgetall1("item." + x).get).sortBy(x => ISODateTimeFormat.dateTimeParser().parseDateTime(x("posted")))(DateTimeOrdering.reverse) }
-      }
-
+      implicit lazy val env = environment
+      implicit lazy val config = configuration
+      fieldsById = SuccessFunction.successFunction(query)
       Redirect(routes.QueryController.QueryAction())
     }
 

@@ -1,6 +1,19 @@
 name := """play-app"""
 
-scalaVersion := "2.11.11"
+lazy val commonSettings = Seq(
+  scalaVersion := "2.11.11",
+  resolvers += Resolver.mavenLocal,
+  resolvers += "scalaz-bintray" at "http://dl.bintray.com/scalaz/releases",
+  libraryDependencies ++= Seq(
+    filters,
+    "org.scalatestplus.play" %% "scalatestplus-play" % "2.0.0" % "test",
+    "org.scalactic" %% "scalactic" % "3.0.1",
+    "net.debasishg" %% "redisclient" % "3.4",
+    "OfflineReverseGeocode" % "OfflineReverseGeocode" % "1.0-SNAPSHOT",
+    "com.github.nscala-time" %% "nscala-time" % "2.16.0",
+    "org.reactivemongo" %% "play2-reactivemongo" % "0.12.6-play25"
+  )
+)
 dockerRepository := Some("303634175659.dkr.ecr.us-east-2.amazonaws.com")
 dockerExposedPorts := Seq(9000)
 
@@ -73,25 +86,14 @@ mappings in Universal := (mappings in Universal).value filter {
   case (file, name) =>  ! name.startsWith("share/doc")
 }
 
-resolvers += Resolver.mavenLocal
-resolvers += "scalaz-bintray" at "http://dl.bintray.com/scalaz/releases"
+lazy val aaaMain = (project in file("."))
+  .settings(commonSettings)
+  .enablePlugins(PlayScala)
+  .aggregate(successFunction)
+  .dependsOn(successFunction)
 
-libraryDependencies ++= Seq(
-  filters,
-  "org.scalatestplus.play" %% "scalatestplus-play" % "2.0.0" % "test",
-  "com.typesafe.play.modules" %% "play-modules-redis" % "2.5.0",
-  "org.scalactic" %% "scalactic" % "3.0.1",
-  "org.scalatest" %% "scalatest" % "3.0.1" % "test",
-  "net.debasishg" %% "redisclient" % "3.4",
-  "com.google.maps" % "google-maps-services" % "0.2.4",
-  "OfflineReverseGeocode" % "OfflineReverseGeocode" % "1.0-SNAPSHOT",
-  "com.github.nscala-time" %% "nscala-time" % "2.16.0",
-  "org.reactivemongo" %% "play2-reactivemongo" % "0.12.6-play25",
-  "org.specs2" %% "specs2-core" % "4.0.2" % "test",
-  "org.scalatest" % "scalatest_2.12" % "3.0.4" % "test"
-)
-
-lazy val root = (project in file(".")).enablePlugins(PlayScala)
+lazy val successFunction = (project in file("modules/success-function"))
+  .settings(commonSettings)
 
 initialCommands in console := """
 |import scala.concurrent.Future
@@ -142,4 +144,3 @@ javaOptions in Universal ++= Seq(
   // You may also want to include this setting if you use play evolutions
   "-DapplyEvolutions.default=true"
 )
-
