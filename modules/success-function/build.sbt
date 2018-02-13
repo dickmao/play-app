@@ -6,7 +6,7 @@ unmanagedResourceDirectories in Compile += baseDirectory.value / ".." / ".." / "
 scalacOptions ++= Seq(
   "-Ywarn-unused"
 )
-libraryDependencies ++= Seq(
-"com.typesafe.scala-logging" %% "scala-logging-slf4j" % "2.1.2",  
-"org.slf4j" % "slf4j-nop" % "1.7.25"
-)
+//libraryDependencies ++= Seq(
+//"com.typesafe.scala-logging" %% "scala-logging-slf4j" % "2.1.2",  
+//"org.slf4j" % "slf4j-nop" % "1.7.25"
+//)
