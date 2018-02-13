@@ -8,7 +8,7 @@ object SuccessFunction {
   import org.joda.time.format.ISODateTimeFormat
   import play.api.{Configuration, Environment}
   import play.api.inject.guice.GuiceApplicationBuilder
-  import reactivemongo.bson.{ BSON, BSONDocument, BSONDocumentHandler, BSONDocumentReader }
+  import reactivemongo.bson.{ BSON, BSONDocument, BSONDocumentHandler, BSONDocumentReader, BSONArray }
   import reactivemongo.api.collections.bson.BSONCollection
   import reactivemongo.api._
   import reactivemongo_test.Common._
@@ -82,10 +82,14 @@ object SuccessFunction {
 //    implicit val configuration = injector.instanceOf[Configuration]
 
     lazy val collection = db("users")
-    val it = collection.find(BSONDocument.empty).cursor[User]()
-    it.collect[List]().foreach(l => l.foreach(println))
+//    val it = collection.find(BSONDocument("email" -> "rchiang@cs.stonybrook.edu"), BSONDocument("queries" -> 1)).requireOne[Query]
+    val it = collection.find(BSONDocument("email" -> "rchiang@cs.stonybrook.edu"), BSONDocument("queries" -> 1)).requireOne[BSONDocument]
+
+//    it.map(bson => println(bson.getAs[BSONArray]("queries").get.getAs[Query](0)))
+    it.map(bson => bson.getAs[List[Query]]("queries").map { println })
+    // it.collect[List](-1, Cursor.FailOnError[List[Query]]()).map { println }
     collection.count(None).map { println(_) }
-    //    close()
+    close()
     //    println(successFunction(FormDTO(Set(0), 500, 4000, Set("Manhattan"), "")))
   }
 }

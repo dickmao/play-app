@@ -94,6 +94,10 @@ lazy val aaaMain = (project in file("."))
 
 lazy val successFunction = (project in file("modules/success-function"))
   .settings(commonSettings)
+  .settings(
+    publish in Docker := {},
+    publishArtifact := false
+  )
 
 initialCommands in console := """
 |import scala.concurrent.Future

@@ -28,10 +28,26 @@ object Query {
       (__ \ "lastEmailed").format[DateTime]
   )(Query.apply, unlift(Query.unapply))
 
-  implicit object DateTimeHandler extends BSONHandler[BSONDateTime, DateTime] {
-    def read(time: BSONDateTime) = new DateTime(time.value)
-    def write(jdtime: DateTime) = BSONDateTime(jdtime.getMillis)
+  // I believe reactivemongo writes java.util.Date as BSONDateTime
+  // and joda DateTimes as NumberLong
+  implicit object DateTimeHandler extends BSONHandler[BSONLong, DateTime] {
+    def read(time: BSONLong) = new DateTime(time.value)
+    def write(jdtime: DateTime) = BSONLong(jdtime.getMillis)
   }
-  implicit val QueryHandler = Macros.handler[Query]
+
+  implicit object QueryReader extends BSONDocumentReader[Query] {
+    def read(bson: BSONDocument): Query = {
+      val opt: Option[Query] = for {
+        id <- bson.getAs[BSONObjectID]("_id")
+        bedrooms <- bson.getAs[List[Int]]("bedrooms")
+        rentlo <- bson.getAs[Int]("rentlo")
+        renthi <- bson.getAs[Int]("renthi")
+        places <- bson.getAs[List[String]]("places")
+        createdAt <- bson.getAs[DateTime]("createdAt")
+        lastEmailed <- bson.getAs[DateTime]("lastEmailed")
+      } yield new Query(id, bedrooms.toSet, rentlo, renthi, places.toSet, createdAt, lastEmailed)
+      opt.get
+    }
+  }
 }
 

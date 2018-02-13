@@ -13,6 +13,7 @@ object User {
   import reactivemongo.play.json.BSONFormats.BSONObjectIDFormat
   import play.api.libs.functional.syntax._
   import reactivemongo.bson._
+  import reactivemongo.bson.BSONArray
 
   implicit val UserFormat: OFormat[User] = (
     (__ \ "_id").format[BSONObjectID] and
@@ -20,5 +21,15 @@ object User {
       (__ \ "queries").format[List[Query]]
   )(User.apply, unlift(User.unapply))
 
-  implicit val UserHandler = Macros.handler[User]
+  //implicit val UserHandler = Macros.handler[User]
+  implicit object UserReader extends BSONDocumentReader[User] {
+    def read(bson: BSONDocument): User = {
+      val opt: Option[User] = for {
+        id <- bson.getAs[BSONObjectID]("_id")
+        email <- bson.getAs[String]("email")
+        queries <- bson.getAs[List[Query]]("queries")
+      } yield new User(id, email, queries)
+      opt.get
+    }
+  }
 }
