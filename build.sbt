@@ -91,7 +91,9 @@ lazy val aaaMain = (project in file("."))
   .enablePlugins(PlayScala)
   .aggregate(successFunction)
   .dependsOn(successFunction)
-
+  .settings(
+    excludeDependencies += "org.slf4j" % "slf4j-nop"
+  )
 lazy val successFunction = (project in file("modules/success-function"))
   .settings(commonSettings)
   .settings(

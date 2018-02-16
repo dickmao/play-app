@@ -1,7 +1,12 @@
 package success_function
 
 object SuccessFunction {
-  import com.github.nscala_time.time.Imports._
+  import scala.concurrent.duration._
+  import scala.concurrent.{ Await, Future, ExecutionContext }
+  import scala.language.postfixOps
+  import ExecutionContext.Implicits.global
+
+  import com.github.nscala_time.time.Imports.DateTimeOrdering
   import com.redis._
   import geocode._
   import models.{ FormDTO, Query, User }
@@ -12,8 +17,6 @@ object SuccessFunction {
   import reactivemongo.api.collections.bson.BSONCollection
   import reactivemongo.api._
   import reactivemongo_test.Common._
-  import scala.concurrent.{ Await, ExecutionContext }
-  import ExecutionContext.Implicits.global
 
   def popmax(id1: String, id2: String)(implicit rediscp: RedisClientPool) : String = {
     val f1 = rediscp.withClient {
@@ -82,12 +85,16 @@ object SuccessFunction {
 //    implicit val configuration = injector.instanceOf[Configuration]
 
     lazy val collection = db("users")
-//    val it = collection.find(BSONDocument("email" -> "rchiang@cs.stonybrook.edu"), BSONDocument("queries" -> 1)).requireOne[Query]
+    // it.collect[List](-1, Cursor.FailOnError[List[Query]]()).map { println }
+    Await.ready(collection.find(BSONDocument()).cursor[User]().collect[List]().map {
+      _.map(println)
+    }, 30 seconds)
     val it = collection.find(BSONDocument("email" -> "rchiang@cs.stonybrook.edu"), BSONDocument("queries" -> 1)).requireOne[BSONDocument]
 
-//    it.map(bson => println(bson.getAs[BSONArray]("queries").get.getAs[Query](0)))
     it.map(bson => bson.getAs[List[Query]]("queries").map { println })
-    // it.collect[List](-1, Cursor.FailOnError[List[Query]]()).map { println }
+
+
+
     collection.count(None).map { println(_) }
     close()
     //    println(successFunction(FormDTO(Set(0), 500, 4000, Set("Manhattan"), "")))
