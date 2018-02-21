@@ -13,6 +13,7 @@
   <logger name="play" level="DEBUG" />
   <logger name="application" level="DEBUG" />
   <logger name="com.gargoylesoftware.htmlunit.javascript" level="OFF" />
+  <logger name="tests" level="ERROR" />
 
   <root level="WARN">
     <appender-ref ref="STDOUT" />

@@ -1,19 +1,14 @@
 package controllers
 
+import com.redis._
 import javax.inject.Inject
-
 import models._
+import play.api.{Configuration, Environment}
 import play.api.data._
 import play.api.i18n._
-import play.api.mvc._
 import play.api.libs.json._
-import play.api.Logger
-import play.api.{ Configuration, Environment }
+import play.api.mvc._
 import play.api.routing._
-import com.github.nscala_time.time.Imports._
-import org.joda.time.format.ISODateTimeFormat
-import geocode._
-import com.redis._
 import success_function.SuccessFunction
 
 /**

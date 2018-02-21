@@ -168,7 +168,7 @@
         @for( item <- fieldsById ) {
           <tr>
           <td><a href=@item("link")>@item("title")</td>
-          <td data-sort-value=@{"%010.0f".format(item.get("price").fold(0.0)(_.toFloat))}><a href=@item("link")>@item.get("price").fold("unspecified")(x => java.text.NumberFormat.getIntegerInstance.format(x.toFloat.toInt))</td>
+          <td data-sort-value=@{"%010.0f".format(item.get("price").fold(0.0)(_.toFloat))}><a href=@item("link")>@item.get("price").fold("unspecified")(x => java.text.NumberFormat.getIntegerInstance.format(x.toLong))</td>
           <td data-sort-value=@item("posted")><a href=@item("link")>@ISODateTimeFormat.dateTimeParser().parseDateTime(item("posted")).toString(DateTimeFormat.forPattern("EEE, d MMM h:mm a"))</td>
           <td><a href=@item("link")>@{"%.1f".format(item.get("score").getOrElse("0.0").toFloat)}</td>
           </tr>

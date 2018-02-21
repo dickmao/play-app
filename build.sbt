@@ -1,27 +1,10 @@
+import play.sbt.routes.RoutesKeys
+import com.typesafe.sbt.SbtNativePackager.autoImport.NativePackagerHelper._
+import com.typesafe.sbt.packager.docker._
+
 name := """play-app"""
 
-lazy val commonSettings = Seq(
-  scalaVersion := "2.11.11",
-  resolvers += Resolver.mavenLocal,
-  resolvers += "scalaz-bintray" at "http://dl.bintray.com/scalaz/releases",
-  libraryDependencies ++= Seq(
-    filters,
-    "org.scalatestplus.play" %% "scalatestplus-play" % "2.0.0" % "test",
-    "org.scalactic" %% "scalactic" % "3.0.1",
-    "net.debasishg" %% "redisclient" % "3.4",
-    "OfflineReverseGeocode" % "OfflineReverseGeocode" % "1.0-SNAPSHOT",
-    "com.github.nscala-time" %% "nscala-time" % "2.16.0",
-    "org.reactivemongo" %% "play2-reactivemongo" % "0.12.6-play25"
-  )
-)
-dockerRepository := Some("303634175659.dkr.ecr.us-east-2.amazonaws.com")
-dockerExposedPorts := Seq(9000)
-
-import play.sbt.routes.RoutesKeys
-RoutesKeys.routesImport += "play.modules.reactivemongo.PathBindables._"
-
 lazy val playStageSecret = taskKey[Unit]("Runs playGenerateSecret and puts output in conf as production.conf")
-
 playStageSecret := {
   import play.sbt.PlayImport._
   val result = PlayKeys.generateSecret.value
@@ -30,7 +13,6 @@ playStageSecret := {
 }
 
 lazy val removeOldImage = taskKey[Unit]("Remove old image to avoid danglers")
-
 removeOldImage := {
   Keys.streams.value.log.info("Removing old " + (dockerTarget in Docker).value)
   Process(Seq("docker", "rmi", "--force", (dockerTarget in Docker).value)) ! new ProcessLogger {
@@ -45,8 +27,8 @@ removeOldImage := {
   }
 }
 
-lazy val reloginEcr = taskKey[Unit]("Renew ECR Authorization Token")
 
+lazy val reloginEcr = taskKey[Unit]("Renew ECR Authorization Token")
 reloginEcr := {
   Keys.streams.value.log.info("Renewing ECR Authorization Token")
   Process(Seq("aws", "ecr", "get-login", "--no-include-email")) ! new ProcessLogger {
@@ -73,31 +55,53 @@ reloginEcr := {
 
 publishLocal in Docker := {
   val _ = (playStageSecret.value, removeOldImage.value)
-  (publishLocal in Docker).value
+    (publishLocal in Docker).value
 }
 
 publish in Docker := {
-  val _ = (playStageSecret.value, removeOldImage.value, reloginEcr.value)
-  (publish in Docker).value
+  val _ = (removeOldImage.value, reloginEcr.value)
+    (publish in Docker).value
 }
 
-// removes doc mappings
-mappings in Universal := (mappings in Universal).value filter {
-  case (file, name) =>  ! name.startsWith("share/doc")
-}
+lazy val settings = Seq(
+  // logLevel := Level.Debug,
+  dockerRepository := Some("303634175659.dkr.ecr.us-east-2.amazonaws.com")
+)
 
-lazy val aaaMain = (project in file("."))
-  .settings(commonSettings)
+lazy val root = (project in file("."))
   .enablePlugins(PlayScala)
+  .settings(Common.settings: _*)
+  .settings(
+    settings,
+    libraryDependencies ++= Dependencies.commonDependencies,
+    libraryDependencies += filters,
+    RoutesKeys.routesImport += "play.modules.reactivemongo.PathBindables._",
+    NativePackagerKeys.dockerExposedPorts := Seq(9000),
+    excludeDependencies += "org.slf4j" % "slf4j-simple"
+  )
   .aggregate(successFunction)
   .dependsOn(successFunction)
-  .settings(
-    excludeDependencies += "org.slf4j" % "slf4j-nop"
-  )
+
 lazy val successFunction = (project in file("modules/success-function"))
-  .settings(commonSettings)
+  .enablePlugins(JavaAppPackaging)
+  .settings(Common.settings: _*)
   .settings(
-    publish in Docker := {}
+    settings,
+    libraryDependencies ++= Dependencies.commonDependencies,
+    libraryDependencies += filters,
+    mappings in Universal ++= directory(baseDirectory.value / "src" / "main" / "resources"),
+    dockerCommands := Seq(
+      Cmd("FROM", "java:latest"),
+      Cmd("ADD", "opt /opt"),
+      Cmd("WORKDIR", "/opt/docker"),
+      ExecCmd("RUN", "chown", "-R", "daemon:daemon", "."),
+      ExecCmd("RUN", "apt-get", "-yq", "update"),
+      ExecCmd("RUN", "apt-get", "-yq", "install", "cron"),
+      Cmd("USER", "daemon"),
+      ExecCmd("RUN", "crontab", "resources/cron-success-function"),
+      ExecCmd("ENTRYPOINT", "cron", "-f"),
+      ExecCmd("CMD")
+    )
   )
 
 initialCommands in console := """

@@ -1,23 +1,27 @@
 package success_function
 
+import org.joda.time.DateTime
+import scala.concurrent.Await
+import scala.concurrent.duration._
+import scala.language.postfixOps
+
+import com.github.nscala_time.time.Imports.DateTimeOrdering
+import com.redis._
+import courier._
+import courier.Defaults._
+import geocode._
+import grizzled.slf4j.Logging
+import models.{FormDTO, Query, User}
+import models.Query.DateTimeHandler
+import org.joda.time.format.{ ISODateTimeFormat, DateTimeFormat }
+import play.api.{Configuration, Environment}
+import play.api.inject.guice.GuiceApplicationBuilder
+import reactivemongo.api._
+import reactivemongo.bson.BSONDocument
+import reactivemongo_test.Common._
+import scala.util._
+
 object SuccessFunction {
-  import scala.concurrent.duration._
-  import scala.concurrent.{ Await, Future, ExecutionContext }
-  import scala.language.postfixOps
-  import ExecutionContext.Implicits.global
-
-  import com.github.nscala_time.time.Imports.DateTimeOrdering
-  import com.redis._
-  import geocode._
-  import models.{ FormDTO, Query, User }
-  import org.joda.time.format.ISODateTimeFormat
-  import play.api.{Configuration, Environment}
-  import play.api.inject.guice.GuiceApplicationBuilder
-  import reactivemongo.bson.{ BSON, BSONDocument, BSONDocumentHandler, BSONDocumentReader, BSONArray }
-  import reactivemongo.api.collections.bson.BSONCollection
-  import reactivemongo.api._
-  import reactivemongo_test.Common._
-
   def popmax(id1: String, id2: String)(implicit rediscp: RedisClientPool) : String = {
     val f1 = rediscp.withClient {
       _.hmget("geoitem." + id1, "featureclass", "featurecode", "population").get
@@ -78,25 +82,66 @@ object SuccessFunction {
       client => { results.toList.map(x => client.hgetall1("item." + x).get).sortBy(x => ISODateTimeFormat.dateTimeParser().parseDateTime(x("posted")))(DateTimeOrdering.reverse) }
     }
   }
-
-  def main(args: Array[String]): Unit = {
-//    val injector = new GuiceApplicationBuilder().injector
-//    implicit val environment = injector.instanceOf[Environment]
-//    implicit val configuration = injector.instanceOf[Configuration]
-
-    lazy val collection = db("users")
-    // it.collect[List](-1, Cursor.FailOnError[List[Query]]()).map { println }
-    Await.ready(collection.find(BSONDocument()).cursor[User]().collect[List]().map {
-      _.map(println)
-    }, 30 seconds)
-    val it = collection.find(BSONDocument("email" -> "rchiang@cs.stonybrook.edu"), BSONDocument("queries" -> 1)).requireOne[BSONDocument]
-
-    it.map(bson => bson.getAs[List[Query]]("queries").map { println })
-
-
-
-    collection.count(None).map { println(_) }
-    close()
-    //    println(successFunction(FormDTO(Set(0), 500, 4000, Set("Manhattan"), "")))
-  }
 }
+
+
+object Main extends App with Logging {
+  val injector = new GuiceApplicationBuilder().injector
+  implicit val environment = injector.instanceOf[Environment]
+  implicit val configuration = injector.instanceOf[Configuration]
+
+  lazy val collection = db("users")
+  // it.collect[List](-1, Cursor.FailOnError[List[Query]]()).map { println }
+
+  val uqis =
+    Await.result(collection.find(BSONDocument()).cursor[User]().collect[List](-1, Cursor.FailOnError[List[User]]()).map {
+      _.flatMap(user => Map(user ->
+        user.queries.flatMap(query => Map(query ->
+          SuccessFunction
+            .successFunction(FormDTO(query.bedrooms, query.rentlo, query.renthi, query.places, user.email))
+            .flatMap(item => if (ISODateTimeFormat.dateTimeParser().parseDateTime(item("posted")).isAfter(query.lastEmailed)) Some(item) else None)))))
+    }, 2 seconds)
+
+  val format_item = (item: Map[String, String]) => {
+    val price = item.get("price").fold("unspecified")(x => java.text.NumberFormat.getIntegerInstance.format(x.toFloat.toLong))
+    val ltrim = (s: String) => s.replaceAll("^\\s+", "")
+    s"${price} ${ltrim(item.get("desc").getOrElse("")).split("\\s+").take(50).mkString(" ")} ${item("link")}"
+  }
+
+  val mailer = Mailer("email-smtp.us-east-1.amazonaws.com", 587)
+    .auth(true)
+    .as("AKIAIAXTT333AZKZSUSA", "Ao3UcJ5y8Av9sdEFLr0xIZGyDerwc8nCWvgMII8DkjMQ")
+    .startTtls(true)()
+
+  for ( (u, qis) <- uqis) {
+    for ( ((q, is), j) <- qis.zipWithIndex) {
+      if (!is.isEmpty) {
+        val formatted = is.map(format_item(_)).mkString("\n\n")
+        val f = mailer(Envelope.from("noreply" `@` "shunyet.com")
+          .to(u.email.addr)
+          .cc("success" `@` "simulator.amazonses.com")
+          .subject(s"digest ${DateTimeFormat.forPattern("yyyyMMdd").print(DateTime.now)}")
+          .content(Text(formatted))) andThen {
+          case Success(v) =>
+            val posted = is.map(item => ISODateTimeFormat.dateTimeParser().parseDateTime(item("posted"))).max
+            Await.ready(collection.update(BSONDocument("email" -> u.email),
+              BSONDocument("$set" -> BSONDocument(s"queries.$j.lastEmailed" -> posted))).map {
+              lastError => logger.debug(s"${q.id} posted ${posted}: $lastError")
+            }, 5 seconds)
+          case Failure(e) =>
+            println(e)
+        }
+        Await.ready(f, Duration.Inf)
+      }
+    }
+  }
+
+
+
+  // val it = collection.find(BSONDocument("email" -> "rchiang@cs.stonybrook.edu"), BSONDocument("queries" -> 1)).requireOne[BSONDocument]
+  // it.map(bson => bson.getAs[List[Query]]("queries").map { println })
+
+  //collection.count(None).map { println(_) }
+  close()
+}
+
