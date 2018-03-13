@@ -71,14 +71,6 @@ object Common {
         println(s"DB resolution: $resolution")
     }
 
-    // call like collection = common.more_or_less_elegant_db("users")
-    // weird because lazy val is like a function
-    lazy val more_or_less_elegant_db = {
-      import java.net.URI
-      val _db = connection.database(new URI(uri).getPath().drop(1), failoverStrategy)
-      Await.result(_db, timeout)
-    }
-
     def close(): Unit = {
       val logger = reactivemongo.util.LazyLogger("Common")
       try {
