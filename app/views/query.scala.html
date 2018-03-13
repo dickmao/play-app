@@ -81,6 +81,14 @@
         $('.my.form input[name=email]').val(Cookies.get('email'))
       }
 
+      @if(!fieldsById.isEmpty) {
+        $('.my.form :checkbox').change(function() {
+          if ($("input[name='checkbeds[]']:checked").length) {
+            $('.my.form').submit();
+          }
+        });
+      }
+
       $('.ui.form').form({
         on: 'blur',
         fields: {
@@ -93,7 +101,6 @@
           }
         }
       });
-
 
       var dropdown_params = {
         apiSettings: {
@@ -117,9 +124,8 @@
 
       function emailSubmit() {
         Cookies.set('email', $('.my.form input[name=email]').val());
-        $('.my.form').attr("action", "@EmailCall.path");
-        $('.my.form').attr("method", "@EmailCall.method");
-        $('.my.form').submit();
+        $('.my.form').attr("action", "@EmailCall.path").attr("method", "@EmailCall.method").submit();
+        $('.my.form').attr("action", "@UpdateCall.path").attr("method", "@UpdateCall.method");
       }
 
       $('.ui.secondary.button').on("click", function(e) {
