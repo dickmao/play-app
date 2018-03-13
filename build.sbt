@@ -3,69 +3,57 @@ import com.typesafe.sbt.SbtNativePackager.autoImport.NativePackagerHelper._
 import com.typesafe.sbt.packager.docker._
 
 name := """play-app"""
-
 lazy val playStageSecret = taskKey[Unit]("Runs playGenerateSecret and puts output in conf as production.conf")
-playStageSecret := {
-  import play.sbt.PlayImport._
-  val result = PlayKeys.generateSecret.value
-  val file = baseDirectory.value / "conf" / "production.conf"
-  IO.write(file, s"""include "application.conf"\nplay.crypto.secret="$result"\n""")
-}
-
 lazy val removeOldImage = taskKey[Unit]("Remove old image to avoid danglers")
-removeOldImage := {
-  Keys.streams.value.log.info("Removing old " + (dockerTarget in Docker).value)
-  Process(Seq("docker", "rmi", "--force", (dockerTarget in Docker).value)) ! new ProcessLogger {
-    def error(err: => String) = err match {
-      case s if s.contains("No such image") => Keys.streams.value.log.info("Pristine")
-      case s                                =>
-    }
-    def info(inf: => String) = inf match {
-      case s                                =>
-    }
-    def buffer[T](f: => T) = f
-  }
-}
-
-
 lazy val reloginEcr = taskKey[Unit]("Renew ECR Authorization Token")
-reloginEcr := {
-  Keys.streams.value.log.info("Renewing ECR Authorization Token")
-  Process(Seq("aws", "ecr", "get-login", "--no-include-email")) ! new ProcessLogger {
-    def error(err: => String) = err match {
-      case s if !s.trim.isEmpty => Keys.streams.value.log.error(s)
-      case s                    =>
-    }
-    def info(inf: => String) = inf match {
-      case s if s.contains("login")  => Process(s) ! new ProcessLogger {
-        def error(err: => String) = err match {
-          case s                     =>
-        }
-        def info(inf: => String) = inf match {
-          case s if s.contains("Login Succeeded") => Keys.streams.value.log.info("ECR login renewed")
-          case s                                  => Keys.streams.value.log.warn("ECR login likely failed")
-        }
-        def buffer[T](f: => T) = f
-      }
-      case s                         => Keys.streams.value.log.warn("ECR get-login failed")
-    }
-    def buffer[T](f: => T) = f
-  }
-}
-
-publishLocal in Docker := {
-  val _ = (playStageSecret.value, removeOldImage.value)
-    (publishLocal in Docker).value
-}
-
-publish in Docker := {
-  val _ = (removeOldImage.value, reloginEcr.value)
-    (publish in Docker).value
-}
 
 lazy val settings = Seq(
   // logLevel := Level.Debug,
-  dockerRepository := Some("303634175659.dkr.ecr.us-east-2.amazonaws.com")
+  dockerRepository := Some("303634175659.dkr.ecr.us-east-2.amazonaws.com"),
+  removeOldImage := {
+    Keys.streams.value.log.info("Removing old " + (dockerTarget in Docker).value)
+    Process(Seq("docker", "rmi", "--force", (dockerTarget in Docker).value)) ! new ProcessLogger {
+      def error(err: => String) = err match {
+        case s if s.contains("No such image") => Keys.streams.value.log.info("Pristine")
+        case s                                =>
+      }
+      def info(inf: => String) = inf match {
+        case s                                =>
+      }
+      def buffer[T](f: => T) = f
+    }
+  },
+  reloginEcr := {
+    Keys.streams.value.log.info("Renewing ECR Authorization Token")
+    Process(Seq("aws", "ecr", "get-login", "--no-include-email")) ! new ProcessLogger {
+      def error(err: => String) = err match {
+        case s if !s.trim.isEmpty => Keys.streams.value.log.error(s)
+        case s                    =>
+      }
+      def info(inf: => String) = inf match {
+        case s if s.contains("login")  => Process(s) ! new ProcessLogger {
+          def error(err: => String) = err match {
+            case s                     =>
+          }
+          def info(inf: => String) = inf match {
+            case s if s.contains("Login Succeeded") => Keys.streams.value.log.info("ECR login renewed")
+            case s                                  => Keys.streams.value.log.warn("ECR login likely failed")
+          }
+          def buffer[T](f: => T) = f
+        }
+        case s                         => Keys.streams.value.log.warn("ECR get-login failed")
+      }
+      def buffer[T](f: => T) = f
+    }
+  },
+  publishLocal in Docker := {
+    val _ = (removeOldImage.value)
+    (publishLocal in Docker).value
+  },
+  publish in Docker := {
+    val _ = (removeOldImage.value, reloginEcr.value)
+    (publish in Docker).value
+  }
 )
 
 lazy val root = (project in file("."))
@@ -77,7 +65,17 @@ lazy val root = (project in file("."))
     libraryDependencies += filters,
     RoutesKeys.routesImport += "play.modules.reactivemongo.PathBindables._",
     NativePackagerKeys.dockerExposedPorts := Seq(9000),
-    excludeDependencies += "org.slf4j" % "slf4j-simple"
+    excludeDependencies += "org.slf4j" % "slf4j-simple",
+    playStageSecret := {
+      val file = baseDirectory.value / "conf" / "production.conf"
+      import play.sbt.PlayImport._
+      val secret = PlayKeys.generateSecret.value
+      IO.write(file, s"""include "application.conf"\nplay.crypto.secret="$secret"\n""")
+    },
+    publishLocal in Docker := {
+      val _ = (playStageSecret.value, removeOldImage.value)
+      (publishLocal in Docker).value
+    }
   )
   .aggregate(successFunction)
   .dependsOn(successFunction)
@@ -90,14 +88,15 @@ lazy val successFunction = (project in file("modules/success-function"))
     libraryDependencies ++= Dependencies.commonDependencies,
     libraryDependencies += filters,
     mappings in Universal ++= directory(baseDirectory.value / "src" / "main" / "resources"),
+    mappings in Universal ++= directory(baseDirectory.value / ".." / ".." / "conf"),
     dockerCommands := Seq(
       Cmd("FROM", "java:latest"),
       Cmd("ADD", "opt /opt"),
       Cmd("WORKDIR", "/opt/docker"),
-      ExecCmd("RUN", "chown", "-R", "daemon:daemon", "."),
+//      ExecCmd("RUN", "chown", "-R", "daemon:daemon", "."),
       ExecCmd("RUN", "apt-get", "-yq", "update"),
       ExecCmd("RUN", "apt-get", "-yq", "install", "cron"),
-      Cmd("USER", "daemon"),
+//      Cmd("USER", "daemon"),
       ExecCmd("RUN", "crontab", "resources/cron-success-function"),
       ExecCmd("ENTRYPOINT", "cron", "-f"),
       ExecCmd("CMD")

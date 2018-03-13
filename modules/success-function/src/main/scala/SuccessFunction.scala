@@ -18,7 +18,7 @@ import play.api.{Configuration, Environment}
 import play.api.inject.guice.GuiceApplicationBuilder
 import reactivemongo.api._
 import reactivemongo.bson.BSONDocument
-import reactivemongo_test.Common._
+import reactivemongo_test.Common
 import scala.util._
 
 object SuccessFunction {
@@ -84,22 +84,22 @@ object SuccessFunction {
   }
 }
 
-
 object Main extends App with Logging {
   val injector = new GuiceApplicationBuilder().injector
   implicit val environment = injector.instanceOf[Environment]
   implicit val configuration = injector.instanceOf[Configuration]
 
-  lazy val collection = db("users")
+  val common = Common(environment, configuration)
+  lazy val collection = common.db("users")
   // it.collect[List](-1, Cursor.FailOnError[List[Query]]()).map { println }
 
   val uqis =
     Await.result(collection.find(BSONDocument()).cursor[User]().collect[List](-1, Cursor.FailOnError[List[User]]()).map {
-      _.flatMap(user => Map(user ->
-        user.queries.flatMap(query => Map(query ->
+      _.flatMap(user =>
+        Map(user -> user.queries.flatMap(query => Map(query ->
           SuccessFunction
-            .successFunction(FormDTO(query.bedrooms, query.rentlo, query.renthi, query.places, user.email))
-            .flatMap(item => if (ISODateTimeFormat.dateTimeParser().parseDateTime(item("posted")).isAfter(query.lastEmailed)) Some(item) else None)))))
+          .successFunction(FormDTO(query.bedrooms, query.rentlo, query.renthi, query.places, user.email))
+          .flatMap(item => if (ISODateTimeFormat.dateTimeParser().parseDateTime(item("posted")).isAfter(query.lastEmailed)) Some(item) else None)))))
     }, 2 seconds)
 
   val format_item = (item: Map[String, String]) => {
@@ -117,7 +117,7 @@ object Main extends App with Logging {
     for ( ((q, is), j) <- qis.zipWithIndex) {
       if (!is.isEmpty) {
         val formatted = is.map(format_item(_)).mkString("\n\n")
-        val f = mailer(Envelope.from("noreply" `@` "shunyet.com")
+        val f = mailer(Envelope.from("rchiang" `@` "cs.stonybrook.edu")
           .to(u.email.addr)
           .cc("success" `@` "simulator.amazonses.com")
           .subject(s"digest ${DateTimeFormat.forPattern("yyyyMMdd").print(DateTime.now)}")
@@ -136,12 +136,10 @@ object Main extends App with Logging {
     }
   }
 
-
-
   // val it = collection.find(BSONDocument("email" -> "rchiang@cs.stonybrook.edu"), BSONDocument("queries" -> 1)).requireOne[BSONDocument]
   // it.map(bson => bson.getAs[List[Query]]("queries").map { println })
 
   //collection.count(None).map { println(_) }
-  close()
+  common.close()
 }
 
