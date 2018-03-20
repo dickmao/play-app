@@ -13,16 +13,8 @@
       <ul>
       @queries.map { query =>
         <li>@StringUtils.abbreviate(query.places.mkString(","), 25) 
-          @if(query.bedrooms contains 0) {
-              0-1BR
-          }
-          @if(query.bedrooms contains 2) {
-              @if(query.bedrooms.size > 1) {
-                  ,
-              }
-              2BR+
-          }
-          $@query.rentlo - $@query.renthi
+          @{query.bedrooms.map{ v => Option(v).map(_.intValue) }.flatten.map {case 0 => "0-1BR"; case 2 => "2BR+" }.mkString(",")}
+          $@query.rentlo-$@query.renthi
           created: @org.joda.time.format.DateTimeFormat.forPattern("MMM dd, yyyy").print(query.createdAt) - <a href="@helper.CSRF(routes.UserController.delete(uid, query.id))" class="delete">delete</a>
         </li>
       }
