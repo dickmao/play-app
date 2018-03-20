@@ -18,7 +18,7 @@ object FormDTO {
   case class CheckBeds(value: Int, name: String)
   val checkbeds = Seq(CheckBeds(0, "0-1BR"), CheckBeds(2, "2BR+"))
 
-  var form = Form[FormDTO](
+  val form = Form[FormDTO](
     mapping(
       "checkbeds" -> list(number(min=0)),
       "rentlo" -> optional(text),

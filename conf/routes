@@ -2,7 +2,7 @@
 # This file defines all application routes (Higher priority routes first)
 # ~~~~
 GET     /*path/                     controllers.UserController.untrail(path: String)
-GET     /                           controllers.QueryController.QueryAction
+GET     /                           controllers.QueryController.EmptyQueryAction
 GET     /test                       controllers.QueryController.Test
 GET     /javascriptRoutes           controllers.QueryController.javascriptRoutes
 GET     /autocomplete               controllers.QueryController.fetch

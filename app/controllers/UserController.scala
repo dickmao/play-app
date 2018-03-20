@@ -35,21 +35,20 @@ class UserController @Inject() (environment: play.api.Environment, configuration
     MovedPermanently("/" + path)
   }
 
-  def Email = Action { implicit request: Request[AnyContent] =>
+  def Email = Action.async { implicit request: Request[AnyContent] =>
     val errorFunction = { formWithErrors: Form[FormDTO] =>
       implicit lazy val config = configuration
-      BadRequest(views.html.query(formWithErrors, routes.QueryController.Update(), routes.UserController.Email(), List.empty[Map[String, String]]))
+      Future.successful(BadRequest(views.html.query(formWithErrors, routes.QueryController.Update(), routes.UserController.Email(), List.empty[Map[String, String]])))
     }
 
     val successFunction = { dto: FormDTO =>
-      FormDTO.form = FormDTO.form.fill(dto)
       val query = Query(BSONObjectID.generate(), dto.bedrooms, dto.rentlo, dto.renthi, dto.places, DateTime.now(), DateTime.now().plusDays(-10))
       val modifier = Json.obj("$push" -> Json.obj("queries" -> Json.toJson(query)))
-      Await.ready(collection.flatMap(col => col.update(Json.obj("email" -> dto.email), modifier, col.db.connection.options.writeConcern, true)).map {
+      collection.flatMap(col => col.update(Json.obj("email" -> dto.email), modifier, col.db.connection.options.writeConcern, true)).map {
         lastError =>
         Logger.debug(s"Successfully inserted with LastError: $lastError")
-      }, 30 seconds)
-      Redirect(routes.UserController.getEmail(dto.email))
+        Redirect(routes.UserController.getEmail(dto.email))
+      }
     }
     FormDTO.form.bindFromRequest.fold(errorFunction, successFunction)
   }
@@ -75,11 +74,11 @@ class UserController @Inject() (environment: play.api.Environment, configuration
     qid: reactivemongo.bson.BSONObjectID) = Action.async { request =>
 
     val modifier = Json.obj("$pull" -> Json.obj("queries" -> Json.obj("_id" -> Json.obj("$oid" -> qid.stringify))))
-    Await.ready(collection.flatMap(col => col.update(Json.obj("_id" -> Json.obj("$oid" -> uid.stringify)), modifier, col.db.connection.options.writeConcern, true)).map {
+    collection.flatMap(col => col.update(Json.obj("_id" -> Json.obj("$oid" -> uid.stringify)), modifier, col.db.connection.options.writeConcern, true)).map {
       lastError =>
       Logger.debug(s"Successfully inserted with LastError: $lastError")
-    }, 30 seconds)
-    Future.successful(Redirect(routes.UserController.getUid(uid)))
+      Redirect(routes.UserController.getUid(uid))
+    }
   }
 
   def createFromJson = Action.async(parse.json) { request =>

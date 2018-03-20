@@ -1,7 +1,8 @@
 package success_function
 
 import org.joda.time.DateTime
-import scala.concurrent.Await
+import play.api.Logger
+import scala.concurrent._
 import scala.concurrent.duration._
 import scala.language.postfixOps
 
@@ -19,69 +20,110 @@ import play.api.inject.guice.GuiceApplicationBuilder
 import reactivemongo.api._
 import reactivemongo.bson.BSONDocument
 import reactivemongo_test.Common
-import scala.util._
+import scala.util.{ Failure, Success, _ }
 
 object SuccessFunction {
-  def popmax(id1: String, id2: String)(implicit rediscp: RedisClientPool) : String = {
-    val f1 = rediscp.withClient {
-      _.hmget("geoitem." + id1, "featureclass", "featurecode", "population").get
+  def popmax(id1: String, id2: String)(implicit rediscp: RedisClientPool) : Future[String] = {
+    val f1 = Future { 
+      rediscp.withClient {
+        _.hmget("geoitem." + id1, "featureclass", "featurecode", "population").get
+      } 
     }
-    val f2 = rediscp.withClient {
-      _.hmget("geoitem." + id2, "featureclass", "featurecode", "population").get
+    val f2 = Future { 
+      rediscp.withClient {
+        _.hmget("geoitem." + id2, "featureclass", "featurecode", "population").get
+      }
     }
-    return if (f1("population").toInt > f2("population").toInt) id1 else id2
+
+    val result = for {
+      a <- f1
+      b <- f2
+    } yield if (a("population").toInt > b("population").toInt) id1 else id2
+    return result
   }
 
-  def successFunction(query: FormDTO)(implicit environment: Environment, configuration: Configuration) = {
+  def successFunction(query: FormDTO)(implicit environment: Environment, configuration: Configuration): Future[List[Map[String, String]]] = {
     val (small, big) = (Set(0,1), Set(2,3,4,5))
     val bedrooms = Set[Int]() ++ (if (query.bedrooms.contains(0)) small else Set()) ++ (if (query.bedrooms.contains(2)) big else Set())
-    implicit val rediscp = new RedisClientPool(configuration.getString("redis.host").getOrElse("redis"),
-      configuration.getInt("redis.port").getOrElse(6379))
-    val byprice = rediscp.withClient { 
-      _.zrangebyscore("item.index.price", query.rentlo.min(query.renthi).toDouble, true, query.renthi.max(query.rentlo).toDouble, true, None).getOrElse(List())
-    }
-    val bybeds = rediscp.withClient {
-      _.zrangebyscore("item.index.bedrooms", bedrooms.min.toDouble, true, bedrooms.max.toDouble, true, None).getOrElse(List())
-    }
+    implicit val rediscp = new RedisClientPool(configuration.getString("redis.host").getOrElse("redis"), configuration.getInt("redis.port").getOrElse(6379))
 
-    val results = scala.collection.mutable.Set.empty[String]
-    for (place <- query.places.map(_.toLowerCase)) {
-      val matches = rediscp.withClient {
-        _.zrangebylex("geoitem.index.name", "[%s".format(place), "(%s{".format(place), None).getOrElse(List[String]())
-      }
-      val geonameids = rediscp.withClient {
-        client => {
-          matches.flatMap(mat => client.smembers("georitem." + mat.split(":")(1)).getOrElse(Set())).flatten
+    lazy val popget = ((id2: String) => {
+      Future {
+        rediscp.withClient {
+          _.hmget("geoitem." + id2, "featureclass", "featurecode", "population")
+            .get("population").toInt
         }
       }
-      if (!geonameids.isEmpty) {
-        val nyp = new ReverseGeoCode(environment.resourceAsStream("NY.P.tsv").get, true)
-        val p0 = geonameids.reduceLeft(popmax)
-        val p0_fields = rediscp.withClient {
-          _.hmget("geoitem." + p0, "longitude", "latitude", "admin2code", "featurecode").get
-        }
-        val dist = if (p0_fields("featurecode").matches("PPLA.*")) 25 else 1.5
-        val proximate = rediscp.withClient {
-          _.georadius("item.geohash.coords", p0_fields("longitude"), p0_fields("latitude"), dist, "km", true, false, false, None, None, None, None).getOrElse(List()).flatten
-        }
+    })
 
-        val proximate_and_colocal = rediscp.withClient {
-          client => {
-            // proximate.foreach(p1 => {
-            //   val geoid = nyp.nearestPlace(p1.coords.get._2.toDouble, p1.coords.get._1.toDouble).id
-            //   Logger.debug("geoitem.%s %s %s".format(geoid, client.hget("geoitem." + geoid, "admin2code").getOrElse(""), client.hget("geoitem." + geoid, "name")))
-            // })
-            proximate.filter(p1 => p0_fields("admin2code") == client.hget("geoitem." + nyp.nearestPlace(p1.coords.get._2.toDouble, p1.coords.get._1.toDouble).id, "admin2code").getOrElse(""))
+    val fitems = query.places.map{_.toLowerCase}.map{ place =>
+      for {
+        matches <- Future {
+          rediscp.withClient {
+            _.zrangebylex("geoitem.index.name", "[%s".format(place), "(%s{".format(place), None).getOrElse(List[String]())
           }
         }
-        results ++= byprice.toSet.intersect(bybeds.toSet).intersect(proximate_and_colocal.map(x => x.member.get).toSet)
-      }
+        geonameids <- Future {
+          rediscp.withClient {
+            client => {
+              matches.flatMap(mat => client.smembers("georitem." + mat.split(":")(1)).getOrElse(Set())).flatten
+            }
+          }
+        }
+        i0 <- Future.sequence(geonameids.map(s => popget(s))).transform(l => 
+          l.zipWithIndex.maxBy(_._1)._2, t => t) if !geonameids.isEmpty
+        p0_fields <- Future {
+          rediscp.withClient {
+            _.hmget("geoitem." + geonameids(i0), "longitude", "latitude", "admin2code", "featurecode").get
+          }
+        }
+        dist = if (p0_fields("featurecode").matches("PPLA.*")) 25 else 1.5
+        proximate <- Future {
+          rediscp.withClient {
+            _.georadius("item.geohash.coords", p0_fields("longitude"), p0_fields("latitude"), dist, "km", true, false, false, None, None, None, None).getOrElse(List()).flatten
+          }
+        }
+        byprice <- Future {
+          rediscp.withClient {
+            _.zrangebyscore("item.index.price", query.rentlo.min(query.renthi).toDouble, true, query.renthi.max(query.rentlo).toDouble, true, None).getOrElse(List())
+          }
+        }
+        bybeds <- Future {
+          rediscp.withClient {
+            _.zrangebyscore("item.index.bedrooms", bedrooms.min.toDouble, true, bedrooms.max.toDouble, true, None).getOrElse(List())
+          }
+        }
+        nyp = new ReverseGeoCode(environment.resourceAsStream("NY.P.tsv").get, true)
+        proximate_and_colocal <- Future {
+          rediscp.withClient {
+            client => {
+              // proximate.foreach(p1 => {
+              //   val geoid = nyp.nearestPlace(p1.coords.get._2.toDouble, p1.coords.get._1.toDouble).id
+              //   Logger.debug("geoitem.%s %s %s".format(geoid, client.hget("geoitem." + geoid, "admin2code").getOrElse(""), client.hget("geoitem." + geoid, "name")))
+              // })
+              proximate.filter(p1 => p0_fields("admin2code") == client.hget("geoitem." + nyp.nearestPlace(p1.coords.get._2.toDouble, p1.coords.get._1.toDouble).id, "admin2code").getOrElse(""))
+            }
+          }
+        }
+        result = byprice.toSet.intersect(bybeds.toSet).intersect(proximate_and_colocal.map(x => x.member.get).toSet)
+      } yield result
     }
 
-    rediscp.withClient {
-      client => { results.toList.map(x => client.hgetall1("item." + x).get).sortBy(x => ISODateTimeFormat.dateTimeParser().parseDateTime(x("posted")))(DateTimeOrdering.reverse) }
-    }
+    val flos = for {
+      ssos <- Future.sequence(fitems.map(f => f.map(Success(_)).recover({ case e => Failure(e)} )).map(_.collect({ case Success(x) => x })))
+      los = ssos.flatten.toList
+    } yield los
+
+    val flfm = flos.map(los => los.map(item => Future {
+      rediscp.withClient {
+        client => client.hgetall1("item." + item).get
+      }
+    }))
+
+    flfm.flatMap(lfm => Future.sequence(lfm))
   }
+
+
 }
 
 object Main extends App with Logging {
@@ -97,9 +139,11 @@ object Main extends App with Logging {
     Await.result(collection.find(BSONDocument()).cursor[User]().collect[List](-1, Cursor.FailOnError[List[User]]()).map {
       _.flatMap(user =>
         Map(user -> user.queries.flatMap(query => Map(query ->
-          SuccessFunction
-          .successFunction(FormDTO(query.bedrooms, query.rentlo, query.renthi, query.places, user.email))
-          .flatMap(item => if (ISODateTimeFormat.dateTimeParser().parseDateTime(item("posted")).isAfter(query.lastEmailed)) Some(item) else None)))))
+          Await.result(SuccessFunction
+            .successFunction(FormDTO(query.bedrooms, query.rentlo, query.renthi, query.places, user.email))
+            .map {
+              _.flatMap(item => if (ISODateTimeFormat.dateTimeParser().parseDateTime(item("posted")).isAfter(query.lastEmailed)) Some(item) else None)
+            }, 2 seconds)))))
     }, 2 seconds)
 
   val format_item = (item: Map[String, String]) => {

@@ -9,7 +9,11 @@ import play.api.i18n._
 import play.api.libs.json._
 import play.api.mvc._
 import play.api.routing._
+import scala.concurrent.ExecutionContext.Implicits.global
+import scala.concurrent.Future
 import success_function.SuccessFunction
+import org.joda.time.format.{ ISODateTimeFormat, DateTimeFormat }
+import com.github.nscala_time.time.Imports.DateTimeOrdering
 
 /**
  * The classic QueryController using I18nSupport.
@@ -18,16 +22,15 @@ import success_function.SuccessFunction
  * a request using implicit conversion.
   */
 class QueryController @Inject() (environment: play.api.Environment, configuration: play.api.Configuration, val messagesApi: MessagesApi) extends Controller with I18nSupport {
-  private var fieldsById = List[Map[String,String]]()
   private val rediscp = new RedisClientPool(configuration.getString("redis.host").getOrElse("redis"),
     configuration.getInt("redis.port").getOrElse(6379))
   def Test = Action { implicit request: Request[AnyContent] =>
     Ok(views.html.test(FormDTO.form, configuration))
   }
 
-  def QueryAction = Action { implicit request: Request[AnyContent] =>
+  def EmptyQueryAction() = Action { implicit request: Request[AnyContent] =>
     implicit lazy val config = configuration
-    Ok(views.html.query(FormDTO.form, routes.QueryController.Update(), routes.UserController.Email(), fieldsById))
+    Ok(views.html.query(FormDTO.form, routes.QueryController.Update(), routes.UserController.Email(), List()))
   }
 
   def popmax(id1: String, id2: String) : String = {
@@ -59,20 +62,18 @@ class QueryController @Inject() (environment: play.api.Environment, configuratio
   }
 
   // This will be the action that handles our form post
-  def Update = Action { implicit request: Request[AnyContent] =>
+  def Update = Action.async { implicit request: Request[AnyContent] =>
     val errorFunction = { formWithErrors: Form[FormDTO] =>
       implicit lazy val config = configuration
-      BadRequest(views.html.query(formWithErrors, routes.QueryController.Update(), routes.UserController.Email(), fieldsById))
+      Future.successful(BadRequest(views.html.query(formWithErrors, routes.QueryController.Update(), routes.UserController.Email(), List())))
     }
 
     val successFunction = { query: FormDTO =>
-      FormDTO.form = FormDTO.form.fill(query)
       implicit lazy val env = environment
       implicit lazy val config = configuration
-      fieldsById = SuccessFunction.successFunction(query)
-      Redirect(routes.QueryController.QueryAction())
+      SuccessFunction.successFunction(query).map(l =>
+        Ok(views.html.query(FormDTO.form.fill(query), routes.QueryController.Update(), routes.UserController.Email(), l.sortBy(x => ISODateTimeFormat.dateTimeParser().parseDateTime(x("posted")))(DateTimeOrdering.reverse))))
     }
-
     FormDTO.form.bindFromRequest.fold(errorFunction, successFunction)
   }
 }

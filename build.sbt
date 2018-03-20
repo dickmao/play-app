@@ -46,12 +46,11 @@ lazy val settings = Seq(
       def buffer[T](f: => T) = f
     }
   },
-  publishLocal in Docker := {
-    val _ = (removeOldImage.value)
-    (publishLocal in Docker).value
-  },
   publish in Docker := {
-    val _ = (removeOldImage.value, reloginEcr.value)
+    // val _ = (removeOldImage.value, reloginEcr.value)
+    // Mark Harrah 20131010 Because of a bug in scala, you have to use dummy names
+    // otherwise you could just use val_ =
+    reloginEcr.value
     (publish in Docker).value
   }
 )
@@ -71,10 +70,6 @@ lazy val root = (project in file("."))
       import play.sbt.PlayImport._
       val secret = PlayKeys.generateSecret.value
       IO.write(file, s"""include "application.conf"\nplay.crypto.secret="$secret"\n""")
-    },
-    publishLocal in Docker := {
-      val _ = (playStageSecret.value, removeOldImage.value)
-      (publishLocal in Docker).value
     }
   )
   .aggregate(successFunction)

@@ -1,5 +1,6 @@
 @import helper._
 @import reactivemongo.bson.BSONObjectID
+@import org.apache.commons.lang.StringUtils
 @(email: String, uid: BSONObjectID, queries: List[models.Query])(implicit r: RequestHeader)
 
 @main("Searches") {
@@ -11,7 +12,19 @@
       } else {
       <ul>
       @queries.map { query =>
-        <li>created: @org.joda.time.format.DateTimeFormat.forPattern("MMM dd, yyyy").print(query.createdAt) - <a href="@helper.CSRF(routes.UserController.delete(uid, query.id))" class="delete">delete</a></li>
+        <li>@StringUtils.abbreviate(query.places.mkString(","), 25) 
+          @if(query.bedrooms contains 0) {
+              0-1BR
+          }
+          @if(query.bedrooms contains 2) {
+              @if(query.bedrooms.size > 1) {
+                  ,
+              }
+              2BR+
+          }
+          $@query.rentlo - $@query.renthi
+          created: @org.joda.time.format.DateTimeFormat.forPattern("MMM dd, yyyy").print(query.createdAt) - <a href="@helper.CSRF(routes.UserController.delete(uid, query.id))" class="delete">delete</a>
+        </li>
       }
       </ul>
       }
