@@ -154,7 +154,7 @@ object Main extends App with Logging {
 
   val mailer = Mailer("email-smtp.us-east-1.amazonaws.com", 587)
     .auth(true)
-    .as("AKIAIAXTT333AZKZSUSA", "Ao3UcJ5y8Av9sdEFLr0xIZGyDerwc8nCWvgMII8DkjMQ")
+    .as(configuration.getString("ses.user").getOrElse(""), configuration.getString("ses.password").getOrElse(""))
     .startTtls(true)()
 
   for ( (u, qis) <- uqis) {
