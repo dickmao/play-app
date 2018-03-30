@@ -143,8 +143,8 @@ object Main extends App with Logging {
             .successFunction(FormDTO(query.bedrooms, query.rentlo, query.renthi, query.places, user.email))
             .map {
               _.flatMap(item => if (ISODateTimeFormat.dateTimeParser().parseDateTime(item("posted")).isAfter(query.lastEmailed)) Some(item) else None)
-            }, 2 seconds)))))
-    }, 2 seconds)
+            }, 20 seconds)))))
+    }, 20 seconds)
 
   val format_item = (item: Map[String, String]) => {
     val price = item.get("price").fold("unspecified")(x => java.text.NumberFormat.getIntegerInstance.format(x.toFloat.toLong))
@@ -152,6 +152,8 @@ object Main extends App with Logging {
     s"${price} ${ltrim(item.get("desc").getOrElse("")).split("\\s+").take(50).mkString(" ")} ${item("link")}"
   }
 
+
+  // logger.debug(s"${configuration.getString("ses.user").getOrElse("")} ${configuration.getString("ses.password").getOrElse("")}")
   val mailer = Mailer("email-smtp.us-east-1.amazonaws.com", 587)
     .auth(true)
     .as(configuration.getString("ses.user").getOrElse(""), configuration.getString("ses.password").getOrElse(""))
@@ -171,7 +173,7 @@ object Main extends App with Logging {
             Await.ready(collection.update(BSONDocument("email" -> u.email),
               BSONDocument("$set" -> BSONDocument(s"queries.$j.lastEmailed" -> posted))).map {
               lastError => logger.debug(s"${q.id} posted ${posted}: $lastError")
-            }, 5 seconds)
+            }, 25 seconds)
           case Failure(e) =>
             println(e)
         }

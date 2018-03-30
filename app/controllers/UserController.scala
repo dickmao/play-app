@@ -38,7 +38,7 @@ class UserController @Inject() (environment: play.api.Environment, configuration
   def Email = Action.async { implicit request: Request[AnyContent] =>
     val errorFunction = { formWithErrors: Form[FormDTO] =>
       implicit lazy val config = configuration
-      Future.successful(BadRequest(views.html.query(formWithErrors, routes.QueryController.Update(), routes.UserController.Email(), List.empty[Map[String, String]])))
+      Future.successful(BadRequest(views.html.query(formWithErrors, List.empty[Map[String, String]])))
     }
 
     val successFunction = { dto: FormDTO =>

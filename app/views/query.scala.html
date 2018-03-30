@@ -1,4 +1,4 @@
-@(form: Form[FormDTO], UpdateCall: Call, EmailCall: Call, fieldsById: List[Map[String, String]])(implicit configuration: play.api.Configuration, request: RequestHeader, messages: Messages)
+@(form: Form[FormDTO], fieldsById: List[Map[String, String]])(implicit configuration: play.api.Configuration, request: RequestHeader, messages: Messages)
 
 @import views.minimal._
 @import com.github.nscala_time.time.Imports._
@@ -39,15 +39,15 @@
   <div class="ui basic modal">
     <div class="content">
       <p>
-        <form class="ui form segment" onsubmit=" $('#approve').click() ; return false " >
+        @helper.form(action = routes.UserController.getEmail(""), args = 'class -> "ui form segment") {
+          @helper.CSRF.formField
           <div class="field">
             <label>Email address</label>
             <div class="ui small input">
               <input type="text" name="email" onkeydown = "if(event.keyCode==13) document.getElementById('approve').click()">
             </div>
           </div>
-        </form>
-      </p>
+        }
     </div>
     <div class="actions">
       <div class="ui cancel button">Cancel</div>
@@ -55,7 +55,7 @@
     </div>
   </div>
 
-  @helper.form(action = UpdateCall, args = 'class -> "my form") {
+  @helper.form(action = routes.QueryController.Update(), args = 'class -> "my form") {
     @helper.CSRF.formField
     Rent
     @minimal.inputCheckboxGroup(form("checkbeds"), options = FormDTO.checkbeds.map(g => g.value.toString -> g.name))(handler = fc_price, implicitly[Messages])
@@ -78,7 +78,7 @@
 
     $(document).ready(function() {
       if( Cookies.get('email') ) {
-        $('.my.form input[name=email]').val(Cookies.get('email'))
+        $('.ui.form input[name=email]').val(Cookies.get('email'))
       }
 
       @if(!fieldsById.isEmpty) {
@@ -123,22 +123,22 @@
       }
 
       function emailSubmit() {
-        Cookies.set('email', $('.my.form input[name=email]').val());
-        $('.my.form').attr("action", "@EmailCall.path").attr("method", "@EmailCall.method").submit();
-        $('.my.form').attr("action", "@UpdateCall.path").attr("method", "@UpdateCall.method");
+        var email = $('.ui.form input[name=email]').val();
+        Cookies.set('email', email);
+        $('.ui.form').attr("action", @{routes.UserController.getEmail("").path} + email);
+        $('.ui.form').submit();
       }
 
       $('.ui.secondary.button').on("click", function(e) {
         e.preventDefault();
-        NonemptyAutocomplete();
+        //        NonemptyAutocomplete();
 
         // if f() { g() h() } else h() instead of if f() { g() } h() 
-        if( $('.my.form input[name=email]').val() == '' ) {
+        if( $('.ui.form input[name=email]').val() == '' ) {
           $('.ui.basic.modal')
             .modal({
               onApprove: function() {
                 if( $('.ui.form').form('is valid', 'email') ) {
-                  $('.my.form input[name=email]').val($('.ui.form').form('get value', 'email'));
                   emailSubmit();
                 } else {
                   return false;
@@ -155,7 +155,6 @@
 
     </script>
 
-    <input name=email type="hidden" value = ""/>
     <button onclick="NonemptyAutocomplete()" class="ui primary button">Update</button>
     <button class="ui secondary button">Email</button>
     <hr/>
