@@ -125,7 +125,7 @@
       function emailSubmit() {
         var email = $('.ui.form input[name=email]').val();
         Cookies.set('email', email);
-        $('.ui.form').attr("action", @{routes.UserController.getEmail("").path} + email);
+        $('.ui.form').attr("action", "@{routes.UserController.getEmail("").path}" + email);
         $('.ui.form').submit();
       }
 
