@@ -30,7 +30,7 @@ RUN \
   sudo dpkg -i sbt-$SBT_VERSION.deb && \
   rm ./sbt-$SBT_VERSION.deb && \
   sudo apt-get -yq update && \
-  DEBIAN_FRONTEND=noninteractive sudo apt-get -yq install jq python-pip netcat-openbsd rsync sbt && \
+  DEBIAN_FRONTEND=noninteractive sudo apt-get -yq install jq python-pip netcat-openbsd rsync sbt vim && \
   sudo apt-get clean && \
   sudo rm -rf /var/lib/apt/lists/* && \
   sudo pip install awscli && \
