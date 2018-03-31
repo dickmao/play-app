@@ -1,6 +1,11 @@
 FROM circleci/openjdk:8-jdk-node-browsers
 
 # Cite: hseeberger/scala-sbt (top google hit as of 20180401)
+# Usage: 
+#   docker build -t circleci:play-app .
+#   docker tag circleci:play-app 303634175659.dkr.ecr.us-east-2.amazonaws.com/circleci:play-app
+#   eval `aws ecr get-login --no-include-email --region us-east-2`
+#   docker push 303634175659.dkr.ecr.us-east-2.amazonaws.com/circleci:play-app
 
 # Env variables
 ENV SCALA_VERSION 2.11.11
@@ -30,3 +35,7 @@ RUN \
   sudo rm -rf /var/lib/apt/lists/* && \
   sudo pip install awscli && \
   sbt sbtVersion
+
+# How did that get in there?
+RUN \
+  rm -rf ./project
