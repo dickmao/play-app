@@ -20,6 +20,17 @@ jobs:
       - setup_remote_docker:   # (2)
           docker_layer_caching: false # (3)
 
+      - run:
+          offlinereversegeocode: |
+            set -x
+            if ! ls OfflineReverseGeocode* 1>/dev/null 2>/dev/null ; then 
+              wget https://github.com/AReallyGoodName/OfflineReverseGeocode/archive/master.zip
+              unzip master.zip
+              rm master.zip
+              cd OfflineReverseGeocode*
+              mvn install
+            fi
+
       - restore_cache:
           keys:
           - v1-dependencies-{{ checksum "build.sbt" }}
@@ -35,5 +46,5 @@ jobs:
             - ~/.m2
             - ~/.ivy2
             - ~/.sbt
-          key: v1-dependencies--{{ checksum "build.sbt" }}
+          key: v1-dependencies-{{ checksum "build.sbt" }}
 
