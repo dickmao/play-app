@@ -1,0 +1,3 @@
+[submodule "OfflineReverseGeocode"]
+	path = OfflineReverseGeocode
+	url = git@github.com:dickmao/OfflineReverseGeocode.git
