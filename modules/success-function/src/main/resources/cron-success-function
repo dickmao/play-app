@@ -1,0 +1,4 @@
+SHELL=/bin/sh
+PATH=/usr/local/sbin:/usr/local/bin:/sbin:/bin:/usr/sbin:/usr/bin
+# m h dom mon dow user   command
+# 0   11   *   *   * daemon   sh -c 'cd /opt/docker ; bin/success-function' '> /proc/1/fd/1 2>/proc/1/fd/2'
