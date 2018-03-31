@@ -1,4 +1,4 @@
-@(form: Form[FormDTO])(implicit configuration: play.api.Configuration, request: RequestHeader, messages: Messages)
+@(form: Form[FormDTO])(theRest: Html)(implicit configuration: play.api.Configuration, request: RequestHeader, messages: Messages)
 
 @import models._
 
@@ -13,6 +13,7 @@
   @minimal.inputText(field = form("rentlo"), args = 'size -> 10)(handler = fc_price, implicitly[Messages])
   and     
   @minimal.inputText(field = form("renthi"), args = 'size -> 10)(handler = fc_price, implicitly[Messages])
+  @theRest
 }
 
 <script>

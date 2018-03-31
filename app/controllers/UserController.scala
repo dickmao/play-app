@@ -44,10 +44,10 @@ class UserController @Inject() (environment: play.api.Environment, configuration
     val successFunction = { dto: FormDTO =>
       val query = Query(BSONObjectID.generate(), dto.bedrooms, dto.rentlo, dto.renthi, dto.places, DateTime.now(), DateTime.now().plusDays(-10))
       val modifier = Json.obj("$push" -> Json.obj("queries" -> Json.toJson(query)))
-      collection.flatMap(col => col.update(Json.obj("email" -> dto.email), modifier, col.db.connection.options.writeConcern, true)).map {
+      collection.flatMap(col => col.update(Json.obj("email" -> "fixme"), modifier, col.db.connection.options.writeConcern, true)).map {
         lastError =>
         Logger.debug(s"Successfully inserted with LastError: $lastError")
-        Redirect(routes.UserController.getEmail(dto.email))
+        Redirect(routes.UserController.getEmail("fixme"))
       }
     }
     FormDTO.form.bindFromRequest.fold(errorFunction, successFunction)

@@ -52,76 +52,79 @@
     </div>
   </div>
 
-  @widget(form)
-  <button onclick="NonemptyAutocomplete()" class="ui primary button">Update</button>
+  @widget(form) {   
+    <script>
+      function NonemptyAutocomplete() {
+        if (!$('#autocomplete').val()) {
+          $('#autocomplete').val('@configuration.getString("dropdown_prepopulate").getOrElse("").split(",").toList.headOption.getOrElse("Manhattan")');
+        }
+        if (!$("input[name='checkbeds[]']:checked").length) {
+          $('#checkbeds_0').prop("checked", true);
+        }
+      }
+    </script>
+    <button onclick="NonemptyAutocomplete()" class="ui primary button">Update</button> 
+  }
   <button class="ui secondary button">Email</button>
   <hr/>
 
   <script>
-  function NonemptyAutocomplete() {
-    if (!$('#autocomplete').val()) {
-      $('#autocomplete').val('@configuration.getString("dropdown_prepopulate").getOrElse("").split(",").toList.headOption.getOrElse("Manhattan")');
-    }
-    if (!$("input[name='checkbeds[]']:checked").length) {
-      $('#checkbeds_0').prop("checked", true);
-    }
-  }
 
-  $(document).ready(function() {
-    if( Cookies.get('email') ) {
-      $('.ui.form input[name=email]').val(Cookies.get('email'))
-    }
-
-    @if(!fieldsById.isEmpty) {
-      $('.my.form :checkbox').change(function() {
-        if ($("input[name='checkbeds[]']:checked").length) {
-          $('.my.form').submit();
+    $(document).ready(function() {
+      if( Cookies.get('email') ) {
+        $('.ui.form input[name=email]').val(Cookies.get('email'))
+      }
+  
+      @if(!fieldsById.isEmpty) {
+        $('.my.form :checkbox').change(function() {
+          if ($("input[name='checkbeds[]']:checked").length) {
+            $('.my.form').submit();
+          }
+        });
+      }
+  
+      $('.ui.form').form({
+        on: 'blur',
+        fields: {
+          email: {
+            rules: [
+              {
+                type: 'email'
+              }
+            ]
+          }
         }
       });
-    }
-
-    $('.ui.form').form({
-      on: 'blur',
-      fields: {
-        email: {
-          rules: [
-            {
-              type: 'email'
-            }
-          ]
-        }
+  
+      function emailSubmit() {
+        var email = $('.ui.form input[name=email]').val();
+        Cookies.set('email', email);
+        $('.ui.form').attr("action", "@{routes.UserController.getEmail("").path}" + email).submit();
       }
-    });
-
-    function emailSubmit() {
-      var email = $('.ui.form input[name=email]').val();
-      Cookies.set('email', email);
-      $('.ui.form').attr("action", "@{routes.UserController.getEmail("").path}" + email).submit();
-    }
-
-    $('.ui.secondary.button').on("click", function(e) {
-      e.preventDefault();
-
-      // if f() { g() h() } else h() instead of if f() { g() } h() 
-      if( $('.ui.form input[name=email]').val() == '' ) {
-        $('.ui.basic.modal')
-          .modal({
-            onApprove: function() {
-              if( $('.ui.form').form('is valid', 'email') ) {
-                emailSubmit();
-              } else {
-                return false;
+  
+      $('.ui.secondary.button').on("click", function(e) {
+        e.preventDefault();
+  
+        // if f() { g() h() } else h() instead of if f() { g() } h() 
+        if( $('.ui.form input[name=email]').val() == '' ) {
+          $('.ui.basic.modal')
+            .modal({
+              onApprove: function() {
+                if( $('.ui.form').form('is valid', 'email') ) {
+                  emailSubmit();
+                } else {
+                  return false;
+                }
               }
-            }
-          })
-          .modal('show')
-        ;
-      } else {
-        emailSubmit();
-      }
+            })
+            .modal('show')
+          ;
+        } else {
+          emailSubmit();
+        }
+      });
     });
-  });
-
+  
   </script>
 
   @if(!fieldsById.isEmpty) {

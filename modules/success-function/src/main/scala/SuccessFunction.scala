@@ -140,7 +140,7 @@ object Main extends App with Logging {
       _.flatMap(user =>
         Map(user -> user.queries.flatMap(query => Map(query ->
           Await.result(SuccessFunction
-            .successFunction(FormDTO(query.bedrooms, query.rentlo, query.renthi, query.places, user.email))
+            .successFunction(FormDTO(query.bedrooms, query.rentlo, query.renthi, query.places))
             .map {
               _.flatMap(item => if (ISODateTimeFormat.dateTimeParser().parseDateTime(item("posted")).isAfter(query.lastEmailed)) Some(item) else None)
             }, 20 seconds)))))

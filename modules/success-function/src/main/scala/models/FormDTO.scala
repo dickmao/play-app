@@ -4,8 +4,7 @@ case class FormDTO(
 bedrooms: Set[Int], 
 rentlo: Int, 
 renthi: Int, 
-places: Set[String],
-email: String
+places: Set[String]
 )
 
 object FormDTO {
@@ -23,14 +22,13 @@ object FormDTO {
       "checkbeds" -> list(number(min=0)),
       "rentlo" -> optional(text),
       "renthi" -> optional(text),
-      "autocomplete" -> nonEmptyText,
-      "email" -> text
+      "autocomplete" -> nonEmptyText
     ) {
-      (checkbeds, rentlo, renthi, autocomplete, email) =>
+      (checkbeds, rentlo, renthi, autocomplete) =>
       val ilo = rentlo.getOrElse("$0").replaceAll("\\D+", "").toInt
       val ihi = renthi.getOrElse(TooDear).replaceAll("\\D+", "").toInt
       val places = autocomplete.split(",").toSet
-      FormDTO(checkbeds.toSet, ilo, ihi, places, email)
+      FormDTO(checkbeds.toSet, ilo, ihi, places)
     } { dto =>
       val formatter = java.text.NumberFormat.getIntegerInstance()
       Some(
@@ -38,8 +36,7 @@ object FormDTO {
           dto.bedrooms.toList,
           Some(s"$$${formatter.format(dto.rentlo.toLong)}"),
           Some(s"$$${formatter.format(dto.renthi.toLong)}"),
-          dto.places.mkString(","),
-          dto.email
+          dto.places.mkString(",")
         ))
-    }).fill(FormDTO(Set(0), 500, 4000, Set.empty, ""))
+    }).fill(FormDTO(Set(0), 500, 4000, Set.empty))
 }

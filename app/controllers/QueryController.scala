@@ -14,6 +14,7 @@ import scala.concurrent.Future
 import success_function.SuccessFunction
 import org.joda.time.format.{ ISODateTimeFormat, DateTimeFormat }
 import com.github.nscala_time.time.Imports.DateTimeOrdering
+import play.api.Logger
 
 /**
  * The classic QueryController using I18nSupport.
