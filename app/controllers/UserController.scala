@@ -38,24 +38,25 @@ class UserController @Inject() (environment: play.api.Environment, configuration
   def Email = Action.async { implicit request: Request[AnyContent] =>
     val errorFunction = { formWithErrors: Form[FormDTO] =>
       implicit lazy val config = configuration
-      Future.successful(BadRequest(views.html.query(formWithErrors, routes.QueryController.Update(), routes.UserController.Email(), List.empty[Map[String, String]])))
+      Future.successful(BadRequest(views.html.query(formWithErrors, List.empty[Map[String, String]])))
     }
 
     val successFunction = { dto: FormDTO =>
       val query = Query(BSONObjectID.generate(), dto.bedrooms, dto.rentlo, dto.renthi, dto.places, DateTime.now(), DateTime.now().plusDays(-10))
       val modifier = Json.obj("$push" -> Json.obj("queries" -> Json.toJson(query)))
-      collection.flatMap(col => col.update(Json.obj("email" -> dto.email), modifier, col.db.connection.options.writeConcern, true)).map {
+      collection.flatMap(col => col.update(Json.obj("email" -> "fixme"), modifier, col.db.connection.options.writeConcern, true)).map {
         lastError =>
         Logger.debug(s"Successfully inserted with LastError: $lastError")
-        Redirect(routes.UserController.getEmail(dto.email))
+        Redirect(routes.UserController.getEmail("fixme"))
       }
     }
     FormDTO.form.bindFromRequest.fold(errorFunction, successFunction)
   }
 
   def getForCursor(futcursor: Future[Cursor[User]]) = Action.async { implicit request: Request[AnyContent] =>
+    implicit lazy val config = configuration
     futcursor.flatMap(_.collect[List](-1, Cursor.FailOnError[List[User]]())).map { users =>
-      users.headOption map { user => Ok(views.html.queries(user.email, user.id, user.queries)) } getOrElse Ok(views.html.queries("", BSONObjectID.generate(), List.empty))
+      users.headOption map { user => Ok(views.html.queries(FormDTO.form, user.email, user.id, user.queries)) } getOrElse Ok(views.html.queries(FormDTO.form, "", BSONObjectID.generate(), List.empty))
     }.recover {
       case e =>
         e.printStackTrace()

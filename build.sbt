@@ -9,6 +9,8 @@ lazy val reloginEcr = taskKey[Unit]("Renew ECR Authorization Token")
 
 lazy val settings = Seq(
   // logLevel := Level.Debug,
+  // git.formattedShaVersion := { (git.gitHeadCommit in ThisBuild).value.map(_.substring(0, 6)) },
+  version in Docker := git.gitCurrentBranch.value,
   dockerRepository := Some("303634175659.dkr.ecr.us-east-2.amazonaws.com"),
   removeOldImage := {
     Keys.streams.value.log.info("Removing old " + (dockerTarget in Docker).value)

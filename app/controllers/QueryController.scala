@@ -14,6 +14,7 @@ import scala.concurrent.Future
 import success_function.SuccessFunction
 import org.joda.time.format.{ ISODateTimeFormat, DateTimeFormat }
 import com.github.nscala_time.time.Imports.DateTimeOrdering
+import play.api.Logger
 
 /**
  * The classic QueryController using I18nSupport.
@@ -30,7 +31,7 @@ class QueryController @Inject() (environment: play.api.Environment, configuratio
 
   def EmptyQueryAction() = Action { implicit request: Request[AnyContent] =>
     implicit lazy val config = configuration
-    Ok(views.html.query(FormDTO.form, routes.QueryController.Update(), routes.UserController.Email(), List()))
+    Ok(views.html.query(FormDTO.form, List()))
   }
 
   def popmax(id1: String, id2: String) : String = {
@@ -65,14 +66,14 @@ class QueryController @Inject() (environment: play.api.Environment, configuratio
   def Update = Action.async { implicit request: Request[AnyContent] =>
     val errorFunction = { formWithErrors: Form[FormDTO] =>
       implicit lazy val config = configuration
-      Future.successful(BadRequest(views.html.query(formWithErrors, routes.QueryController.Update(), routes.UserController.Email(), List())))
+      Future.successful(BadRequest(views.html.query(formWithErrors, List())))
     }
 
     val successFunction = { query: FormDTO =>
       implicit lazy val env = environment
       implicit lazy val config = configuration
       SuccessFunction.successFunction(query).map(l =>
-        Ok(views.html.query(FormDTO.form.fill(query), routes.QueryController.Update(), routes.UserController.Email(), l.sortBy(x => ISODateTimeFormat.dateTimeParser().parseDateTime(x("posted")))(DateTimeOrdering.reverse))))
+        Ok(views.html.query(FormDTO.form.fill(query), l.sortBy(x => ISODateTimeFormat.dateTimeParser().parseDateTime(x("posted")))(DateTimeOrdering.reverse))))
     }
     FormDTO.form.bindFromRequest.fold(errorFunction, successFunction)
   }

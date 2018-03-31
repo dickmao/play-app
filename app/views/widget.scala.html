@@ -1,0 +1,41 @@
+@(form: Form[FormDTO])(theRest: Html)(implicit configuration: play.api.Configuration, request: RequestHeader, messages: Messages)
+
+@import models._
+
+@fc_price = @{ helper.FieldConstructor(minimal.priceFieldConstructor.f) }
+@helper.form(action = routes.QueryController.Update(), args = 'class -> "my form", 'style -> "display:inline;") {
+  @helper.CSRF.formField
+  Rent
+  @minimal.inputCheckboxGroup(form("checkbeds"), options = FormDTO.checkbeds.map(g => g.value.toString -> g.name))(handler = fc_price, implicitly[Messages])
+  in 
+  @minimal.inputDropdown(field = form("autocomplete"), prepop = configuration.getString("dropdown_prepopulate").getOrElse("").split(",").toList)(handler = fc_price, implicitly[Messages])
+  between
+  @minimal.inputText(field = form("rentlo"), args = 'size -> 10)(handler = fc_price, implicitly[Messages])
+  and     
+  @minimal.inputText(field = form("renthi"), args = 'size -> 10)(handler = fc_price, implicitly[Messages])
+  @theRest
+}
+
+<script>
+  $(document).ready(function() {
+    var dropdown_params = {
+      apiSettings: {
+        url: '/autocomplete?query={query}'
+      },
+      keepOnScreen: false,
+    };
+
+    $('.ui.dropdown').dropdown(dropdown_params);
+
+    if( $('.my.form input[name=autocomplete]').val() != '' ) {
+      var menu = $('.dropdown').find('.menu');
+      menu.html('');
+      var prepops = $('.my.form input[name=autocomplete]').val().split(/,/);
+      for (var i=0; i<prepops.length; i++) {
+        menu.append('<div class="item" data-value="' + prepops[i] + '">' + prepops[i] + '</div>');
+      }
+      $('.dropdown').dropdown('refresh');
+      $('.dropdown').dropdown('set selected', prepops);
+    }
+  });
+</script>

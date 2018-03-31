@@ -1,24 +1,27 @@
-@import helper._
 @import reactivemongo.bson.BSONObjectID
 @import org.apache.commons.lang.StringUtils
-@(email: String, uid: BSONObjectID, queries: List[models.Query])(implicit r: RequestHeader)
+@(form: Form[FormDTO], email: String, uid: BSONObjectID, queries: List[models.Query])(implicit configuration: play.api.Configuration, request: RequestHeader, messages: Messages)
 
-@main("Searches") {
+@main("Stored Searches") {
   <div class="row">
     <div class="span12">
-      <h2>Stored searches</h2>
-      @if(queries.isEmpty) {
-        <p>No queries found.</p>
-      } else {
       <ul>
-      @queries.map { query =>
-        <li>@StringUtils.abbreviate(query.places.mkString(","), 25) 
-          @{query.bedrooms.map{ v => Option(v).map(_.intValue) }.flatten.map {case 0 => "0-1BR"; case 2 => "2BR+" }.mkString(",")}
-          $@query.rentlo-$@query.renthi
-          created: @org.joda.time.format.DateTimeFormat.forPattern("MMM dd, yyyy").print(query.createdAt) - <a href="@helper.CSRF(routes.UserController.delete(uid, query.id))" class="delete">delete</a>
-        </li>
+      @if(queries.isEmpty) {
+          <li>No queries found.</li>
+      } else {
+        @queries.map { query =>
+          <li>@StringUtils.abbreviate(query.places.mkString(","), 25) 
+            @{query.bedrooms.map{ v => Option(v).map(_.intValue) }.flatten.map {case 0 => "0-1BR"; case 2 => "2BR+" }.mkString(",")}
+            $@query.rentlo-$@query.renthi
+            created: @org.joda.time.format.DateTimeFormat.forPattern("MMM dd, yyyy").print(query.createdAt) - <a href="@helper.CSRF(routes.UserController.delete(uid, query.id))" class="delete">delete</a>
+          </li>
+        }
       }
       </ul>
+      @widget(form) { 
+        <button class="ui primary button">
+          <i class="plus circle icon"></i>Add Search
+        </button>
       }
     </div>
   </div>
