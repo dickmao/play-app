@@ -22,14 +22,8 @@ jobs:
 
       - run:
           command: |
-            set -x
-            if ! ls OfflineReverseGeocode* 1>/dev/null 2>/dev/null ; then 
-              wget https://github.com/AReallyGoodName/OfflineReverseGeocode/archive/master.zip
-              unzip master.zip
-              rm master.zip
-              cd OfflineReverseGeocode*
-              mvn install
-            fi
+            cd OfflineReverseGeocode
+            mvn install
 
       - restore_cache:
           keys:
