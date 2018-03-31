@@ -54,8 +54,9 @@ class UserController @Inject() (environment: play.api.Environment, configuration
   }
 
   def getForCursor(futcursor: Future[Cursor[User]]) = Action.async { implicit request: Request[AnyContent] =>
+    implicit lazy val config = configuration
     futcursor.flatMap(_.collect[List](-1, Cursor.FailOnError[List[User]]())).map { users =>
-      users.headOption map { user => Ok(views.html.queries(user.email, user.id, user.queries)) } getOrElse Ok(views.html.queries("", BSONObjectID.generate(), List.empty))
+      users.headOption map { user => Ok(views.html.queries(FormDTO.form, user.email, user.id, user.queries)) } getOrElse Ok(views.html.queries(FormDTO.form, "", BSONObjectID.generate(), List.empty))
     }.recover {
       case e =>
         e.printStackTrace()

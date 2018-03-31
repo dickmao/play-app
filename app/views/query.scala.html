@@ -1,11 +1,8 @@
-@(form: Form[FormDTO], fieldsById: List[Map[String, String]])(implicit configuration: play.api.Configuration, request: RequestHeader, messages: Messages)
-
-@import views.minimal._
 @import com.github.nscala_time.time.Imports._
 @import org.joda.time.format.ISODateTimeFormat
 @import models._
+@(form: Form[FormDTO], fieldsById: List[Map[String, String]])(implicit configuration: play.api.Configuration, request: RequestHeader, messages: Messages)
 
-@fc_price = @{ helper.FieldConstructor(minimal.priceFieldConstructor.f) }
 @main("Keeyosk") {
   @* Flash shows updates to a page *@
   @request.flash.data.map{ case (foo, bar) =>
@@ -55,132 +52,101 @@
     </div>
   </div>
 
-  @helper.form(action = routes.QueryController.Update(), args = 'class -> "my form") {
-    @helper.CSRF.formField
-    Rent
-    @minimal.inputCheckboxGroup(form("checkbeds"), options = FormDTO.checkbeds.map(g => g.value.toString -> g.name))(handler = fc_price, implicitly[Messages])
-    in 
-    @minimal.inputDropdown(field = form("autocomplete"), prepop = configuration.getString("dropdown_prepopulate").getOrElse("").split(",").toList)(handler = fc_price, implicitly[Messages])
-    between
-    @minimal.inputText(field = form("rentlo"), args = 'size -> 10)(handler = fc_price, implicitly[Messages])
-    and     
-    @minimal.inputText(field = form("renthi"), args = 'size -> 10)(handler = fc_price, implicitly[Messages])
+  @widget(form)
+  <button onclick="NonemptyAutocomplete()" class="ui primary button">Update</button>
+  <button class="ui secondary button">Email</button>
+  <hr/>
 
-    <script>
-    function NonemptyAutocomplete() {
-      if (!$('#autocomplete').val()) {
-        $('#autocomplete').val('@configuration.getString("dropdown_prepopulate").getOrElse("").split(",").toList.headOption.getOrElse("Manhattan")');
-      }
-      if (!$("input[name='checkbeds[]']:checked").length) {
-        $('#checkbeds_0').prop("checked", true);
-      }
+  <script>
+  function NonemptyAutocomplete() {
+    if (!$('#autocomplete').val()) {
+      $('#autocomplete').val('@configuration.getString("dropdown_prepopulate").getOrElse("").split(",").toList.headOption.getOrElse("Manhattan")');
     }
+    if (!$("input[name='checkbeds[]']:checked").length) {
+      $('#checkbeds_0').prop("checked", true);
+    }
+  }
 
-    $(document).ready(function() {
-      if( Cookies.get('email') ) {
-        $('.ui.form input[name=email]').val(Cookies.get('email'))
-      }
-
-      @if(!fieldsById.isEmpty) {
-        $('.my.form :checkbox').change(function() {
-          if ($("input[name='checkbeds[]']:checked").length) {
-            $('.my.form').submit();
-          }
-        });
-      }
-
-      $('.ui.form').form({
-        on: 'blur',
-        fields: {
-          email: {
-            rules: [
-              {
-                type: 'email'
-              }
-            ]
-          }
-        }
-      });
-
-      var dropdown_params = {
-        apiSettings: {
-          url: '/autocomplete?query={query}'
-        },
-        keepOnScreen: false,
-      };
-
-      $('.ui.dropdown').dropdown(dropdown_params);
-
-      if( $('.my.form input[name=autocomplete]').val() != '' ) {
-        var menu = $('.dropdown').find('.menu');
-        menu.html('');
-        var prepops = $('.my.form input[name=autocomplete]').val().split(/,/);
-        for (var i=0; i<prepops.length; i++) {
-          menu.append('<div class="item" data-value="' + prepops[i] + '">' + prepops[i] + '</div>');
-        }
-        $('.dropdown').dropdown('refresh');
-        $('.dropdown').dropdown('set selected', prepops);
-      }
-
-      function emailSubmit() {
-        var email = $('.ui.form input[name=email]').val();
-        Cookies.set('email', email);
-        $('.ui.form').attr("action", "@{routes.UserController.getEmail("").path}" + email).submit();
-      }
-
-      $('.ui.secondary.button').on("click", function(e) {
-        e.preventDefault();
-
-        // if f() { g() h() } else h() instead of if f() { g() } h() 
-        if( $('.ui.form input[name=email]').val() == '' ) {
-          $('.ui.basic.modal')
-            .modal({
-              onApprove: function() {
-                if( $('.ui.form').form('is valid', 'email') ) {
-                  emailSubmit();
-                } else {
-                  return false;
-                }
-              }
-            })
-            .modal('show')
-          ;
-        } else {
-          emailSubmit();
-        }
-      });
-    });
-
-    </script>
-
-    <button onclick="NonemptyAutocomplete()" class="ui primary button">Update</button>
-    <button class="ui secondary button">Email</button>
-    <hr/>
+  $(document).ready(function() {
+    if( Cookies.get('email') ) {
+      $('.ui.form input[name=email]').val(Cookies.get('email'))
+    }
 
     @if(!fieldsById.isEmpty) {
-      <table class="ui sortable striped table">
-        <thead>
-          <tr>
-            <th class="no-sort">Title</th>
-            <th>Price</th>
-            <th sorted descending>Posted</th>
-            <th>Score</th>
-          </tr>
-        </thead>
-        <tbody>
-        @for( item <- fieldsById ) {
-          <tr>
-          <td><a href=@item("link")>@item("title")</td>
-          <td data-sort-value=@{"%010.0f".format(item.get("price").fold(0.0)(_.toFloat))}><a href=@item("link")>@item.get("price").fold("unspecified")(x => java.text.NumberFormat.getIntegerInstance.format(x.toFloat.toLong))</td>
-          <td data-sort-value=@item("posted")><a href=@item("link")>@ISODateTimeFormat.dateTimeParser().parseDateTime(item("posted")).toString(DateTimeFormat.forPattern("EEE, d MMM h:mm a"))</td>
-          <td><a href=@item("link")>@{"%.1f".format(item.get("score").getOrElse("0.0").toFloat)}</td>
-          </tr>
+      $('.my.form :checkbox').change(function() {
+        if ($("input[name='checkbeds[]']:checked").length) {
+          $('.my.form').submit();
         }
-        </tbody>
-      </table>
-      <script>
-        $('table').tablesort()
-      </script>    
+      });
     }
+
+    $('.ui.form').form({
+      on: 'blur',
+      fields: {
+        email: {
+          rules: [
+            {
+              type: 'email'
+            }
+          ]
+        }
+      }
+    });
+
+    function emailSubmit() {
+      var email = $('.ui.form input[name=email]').val();
+      Cookies.set('email', email);
+      $('.ui.form').attr("action", "@{routes.UserController.getEmail("").path}" + email).submit();
+    }
+
+    $('.ui.secondary.button').on("click", function(e) {
+      e.preventDefault();
+
+      // if f() { g() h() } else h() instead of if f() { g() } h() 
+      if( $('.ui.form input[name=email]').val() == '' ) {
+        $('.ui.basic.modal')
+          .modal({
+            onApprove: function() {
+              if( $('.ui.form').form('is valid', 'email') ) {
+                emailSubmit();
+              } else {
+                return false;
+              }
+            }
+          })
+          .modal('show')
+        ;
+      } else {
+        emailSubmit();
+      }
+    });
+  });
+
+  </script>
+
+  @if(!fieldsById.isEmpty) {
+    <table class="ui sortable striped table">
+      <thead>
+        <tr>
+          <th class="no-sort">Title</th>
+          <th>Price</th>
+          <th sorted descending>Posted</th>
+          <th>Score</th>
+        </tr>
+      </thead>
+      <tbody>
+      @for( item <- fieldsById ) {
+        <tr>
+        <td><a href=@item("link")>@item("title")</td>
+        <td data-sort-value=@{"%010.0f".format(item.get("price").fold(0.0)(_.toFloat))}><a href=@item("link")>@item.get("price").fold("unspecified")(x => java.text.NumberFormat.getIntegerInstance.format(x.toFloat.toLong))</td>
+        <td data-sort-value=@item("posted")><a href=@item("link")>@ISODateTimeFormat.dateTimeParser().parseDateTime(item("posted")).toString(DateTimeFormat.forPattern("EEE, d MMM h:mm a"))</td>
+        <td><a href=@item("link")>@{"%.1f".format(item.get("score").getOrElse("0.0").toFloat)}</td>
+        </tr>
+      }
+      </tbody>
+    </table>
+    <script>
+      $('table').tablesort()
+    </script>    
   }
 }

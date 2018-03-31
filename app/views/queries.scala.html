@@ -1,7 +1,6 @@
-@import helper._
 @import reactivemongo.bson.BSONObjectID
 @import org.apache.commons.lang.StringUtils
-@(email: String, uid: BSONObjectID, queries: List[models.Query])(implicit r: RequestHeader)
+@(form: Form[FormDTO], email: String, uid: BSONObjectID, queries: List[models.Query])(implicit configuration: play.api.Configuration, request: RequestHeader, messages: Messages)
 
 @main("Stored Searches") {
   <div class="row">
@@ -19,10 +18,12 @@
         }
       }
       </ul>
-      <button class="ui basic button">
+      @widget(form)
+      <button class="ui primary button">
         <i class="plus circle icon"></i>
         Add Search
       </button>
+
     </div>
   </div>
 }
