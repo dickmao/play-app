@@ -21,7 +21,7 @@ jobs:
           docker_layer_caching: false # (3)
 
       - run:
-          offlinereversegeocode: |
+          command: |
             set -x
             if ! ls OfflineReverseGeocode* 1>/dev/null 2>/dev/null ; then 
               wget https://github.com/AReallyGoodName/OfflineReverseGeocode/archive/master.zip
