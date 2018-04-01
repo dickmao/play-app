@@ -20,6 +20,14 @@ jobs:
       - setup_remote_docker:   # (2)
           docker_layer_caching: false # (3)
 
+      - run:
+          command: |
+            cd OfflineReverseGeocode
+            # jgraettinger discuss.circleci.com
+            git submodule sync
+            git submodule update --init --recursive || (rm -fr .git/config .git/modules && git submodule deinit -f . && git submodule update --init --recursive)
+            mvn install
+
       - restore_cache:
           keys:
           - v1-dependencies-{{ checksum "build.sbt" }}
@@ -35,5 +43,5 @@ jobs:
             - ~/.m2
             - ~/.ivy2
             - ~/.sbt
-          key: v1-dependencies--{{ checksum "build.sbt" }}
+          key: v1-dependencies-{{ checksum "build.sbt" }}
 
