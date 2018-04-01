@@ -27,7 +27,7 @@ lazy val settings = Seq(
   },
   reloginEcr := {
     Keys.streams.value.log.info("Renewing ECR Authorization Token")
-    Process(Seq("aws", "ecr", "get-login", "--no-include-email")) ! new ProcessLogger {
+    Process(Seq("aws", "ecr", "get-login", "--no-include-email", "--region", sys.props.getOrElse("AWS_REGION", default = "us-east-2"))) ! new ProcessLogger {
       def error(err: => String) = err match {
         case s if !s.trim.isEmpty => Keys.streams.value.log.error(s)
         case s                    =>
