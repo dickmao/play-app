@@ -172,7 +172,7 @@ object Main extends App with Logging {
             val posted = is.map(item => ISODateTimeFormat.dateTimeParser().parseDateTime(item("posted"))).max
             Await.ready(collection.update(BSONDocument("email" -> u.email),
               BSONDocument("$set" -> BSONDocument(s"queries.$j.lastEmailed" -> posted))).map {
-              lastError => logger.debug(s"${q.id} posted ${posted}: $lastError")
+              lastError => logger.info(s"${q.id} posted ${posted}: $lastError")
             }, 25 seconds)
           case Failure(e) =>
             println(e)

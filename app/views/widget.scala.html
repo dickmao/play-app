@@ -1,9 +1,9 @@
-@(form: Form[FormDTO])(theRest: Html)(implicit configuration: play.api.Configuration, request: RequestHeader, messages: Messages)
+@(form: Form[FormDTO], action: Call = routes.QueryController.Update)(theRest: Html)(implicit configuration: play.api.Configuration, request: RequestHeader, messages: Messages)
 
 @import models._
 
 @fc_price = @{ helper.FieldConstructor(minimal.priceFieldConstructor.f) }
-@helper.form(action = routes.QueryController.Update(), args = 'class -> "my form", 'style -> "display:inline;") {
+@helper.form(action = action, args = 'class -> "my form", 'style -> "display:inline;") {
   @helper.CSRF.formField
   Rent
   @minimal.inputCheckboxGroup(form("checkbeds"), options = FormDTO.checkbeds.map(g => g.value.toString -> g.name))(handler = fc_price, implicitly[Messages])
