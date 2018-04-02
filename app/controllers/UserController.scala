@@ -38,7 +38,14 @@ class UserController @Inject() (environment: play.api.Environment, configuration
   def Email(email: String) = Action.async { implicit request: Request[AnyContent] =>
     val errorFunction = { formWithErrors: Form[FormDTO] =>
       implicit lazy val config = configuration
-      Future.successful(BadRequest(views.html.query(formWithErrors, List.empty[Map[String, String]])))
+      collection.map(_.find(Json.obj("email" -> email)).cursor[User]())
+        .flatMap(_.collect[List](-1, Cursor.FailOnError[List[User]]())).map { users =>
+        users.headOption map { user => BadRequest(views.html.queries(formWithErrors, user.email, user.id, user.queries)) } getOrElse BadRequest(views.html.queries(formWithErrors, "", BSONObjectID.generate(), List.empty))
+      }.recover {
+        case e =>
+          e.printStackTrace()
+          BadRequest(e.getMessage())
+      }
     }
 
     val successFunction = { dto: FormDTO =>
