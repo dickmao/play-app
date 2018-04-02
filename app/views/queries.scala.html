@@ -3,6 +3,7 @@
 @(form: Form[FormDTO], email: String, uid: BSONObjectID, queries: List[models.Query])(implicit configuration: play.api.Configuration, request: RequestHeader, messages: Messages)
 
 @main("Stored Searches") {
+  <a href="/">Home</a>
   <h2>Stored Searches</h2>
   <ul>
   @if(queries.isEmpty) {

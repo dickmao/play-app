@@ -36,7 +36,7 @@
   <div class="ui basic modal">
     <div class="content">
       <p>
-        @helper.form(action = routes.UserController.getEmail(""), args = 'class -> "ui form segment") {
+        @helper.form(action = routes.UserController.getEmail("tbd"), args = 'class -> "ui form segment") {
           @helper.CSRF.formField
           <div class="field">
             <label>Email address</label>
@@ -99,7 +99,7 @@
       function emailSubmit() {
         var email = $('.ui.form input[name=email]').val();
         Cookies.set('email', email);
-        $('.ui.form').attr("action", "@{routes.UserController.getEmail("").path}" + email).submit();
+        $('.ui.form').submit();
       }
   
       $('.ui.secondary.button').on("click", function(e) {

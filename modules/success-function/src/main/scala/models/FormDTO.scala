@@ -28,7 +28,7 @@ object FormDTO {
       val ilo = rentlo.getOrElse("$0").replaceAll("\\D+", "").toInt
       val ihi = renthi.getOrElse(TooDear).replaceAll("\\D+", "").toInt
       val places = autocomplete.split(",").toSet
-      FormDTO(checkbeds.toSet, ilo, ihi, places)
+      FormDTO(checkbeds.toSet, ilo.min(ihi), ilo.max(ihi), places)
     } { dto =>
       val formatter = java.text.NumberFormat.getIntegerInstance()
       Some(
