@@ -163,16 +163,19 @@ object Main extends App with Logging {
     for ( ((q, is), j) <- qis.zipWithIndex) {
       if (!is.isEmpty) {
         val formatted = is.map(format_item(_)).mkString("\n\n")
+        val manageAt = "Manage searches"
         val f = mailer(Envelope.from("rchiang" `@` "cs.stonybrook.edu")
           .to(u.email.addr)
           .cc("success" `@` "simulator.amazonses.com")
           .subject(s"digest ${DateTimeFormat.forPattern("yyyyMMdd").print(DateTime.now)}")
-          .content(Text(formatted))) andThen {
+          .content(Text(formatted + "\n" + manageAt))) andThen {
           case Success(v) =>
             val posted = is.map(item => ISODateTimeFormat.dateTimeParser().parseDateTime(item("posted"))).max
             Await.ready(collection.update(BSONDocument("email" -> u.email),
               BSONDocument("$set" -> BSONDocument(s"queries.$j.lastEmailed" -> posted))).map {
-              lastError => logger.info(s"${q.id} posted ${posted}: $lastError")
+              lastError => {
+                logger.info(s"${q.id} posted ${q.lastEmailed} -> ${posted}: $lastError")
+              }
             }, 25 seconds)
           case Failure(e) =>
             println(e)
