@@ -168,7 +168,7 @@ object Main extends App with Logging {
           .to(u.email.addr)
           .cc("success" `@` "simulator.amazonses.com")
           .subject(s"digest ${DateTimeFormat.forPattern("yyyyMMdd").print(DateTime.now)}")
-          .content(Text(formatted + "\n" + manageAt))) andThen {
+          .content(Text(formatted + "\n\n" + manageAt))) andThen {
           case Success(v) =>
             val posted = is.map(item => ISODateTimeFormat.dateTimeParser().parseDateTime(item("posted"))).max
             Await.ready(collection.update(BSONDocument("email" -> u.email),
