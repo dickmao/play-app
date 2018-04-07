@@ -47,13 +47,6 @@ lazy val settings = Seq(
       }
       def buffer[T](f: => T) = f
     }
-  },
-  publish in Docker := {
-    // val _ = (removeOldImage.value, reloginEcr.value)
-    // Mark Harrah 20131010 Because of a bug in scala, you have to use dummy names
-    // otherwise you could just use val_ =
-    val _ = (reloginEcr.value, playStageSecret.value)
-    (publish in Docker).value
   }
 )
 
@@ -72,6 +65,13 @@ lazy val root = (project in file("."))
       import play.sbt.PlayImport._
       val secret = PlayKeys.generateSecret.value
       IO.write(file, s"""include "application.conf"\nplay.crypto.secret="$secret"\n""")
+    },
+    publish in Docker := {
+      // val _ = (removeOldImage.value, reloginEcr.value)
+      // Mark Harrah 20131010 Because of a bug in scala, you have to use dummy names
+      // otherwise you could just use val_ =
+      val _ = (reloginEcr.value, playStageSecret.value)
+      (publish in Docker).value
     }
   )
   .aggregate(successFunction)
@@ -86,6 +86,13 @@ lazy val successFunction = (project in file("modules/success-function"))
     libraryDependencies += filters,
     mappings in Universal ++= directory(baseDirectory.value / "src" / "main" / "resources"),
     mappings in Universal ++= directory(baseDirectory.value / ".." / ".." / "conf"),
+    publish in Docker := {
+      // val _ = (removeOldImage.value, reloginEcr.value)
+      // Mark Harrah 20131010 Because of a bug in scala, you have to use dummy names
+      // otherwise you could just use val_ =
+      reloginEcr.value
+      (publish in Docker).value
+    },
     dockerCommands := Seq(
       Cmd("FROM", "java:latest"),
       Cmd("ADD", "opt /opt"),
