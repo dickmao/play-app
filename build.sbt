@@ -65,6 +65,7 @@ lazy val root = (project in file("."))
       import play.sbt.PlayImport._
       val secret = PlayKeys.generateSecret.value
       IO.write(file, s"""include "application.conf"\nplay.crypto.secret="$secret"\n""")
+      mappings in Universal ++= directory(file)
     },
     publish in Docker := {
       // val _ = (removeOldImage.value, reloginEcr.value)
