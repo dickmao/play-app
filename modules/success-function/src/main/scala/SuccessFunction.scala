@@ -179,6 +179,7 @@ object Main extends App with Logging {
             }, 25 seconds)
           case Failure(e) =>
             println(e)
+            throw(e)
         }
         Await.ready(f, Duration.Inf)
       }
