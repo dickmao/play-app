@@ -152,7 +152,6 @@ object Main extends App with Logging {
     s"${price} ${ltrim(item.get("desc").getOrElse("")).split("\\s+").take(50).mkString(" ")} ${item("link")}"
   }
 
-
   // logger.debug(s"${configuration.getString("ses.user").getOrElse("")} ${configuration.getString("ses.password").getOrElse("")}")
   val mailer = Mailer("email-smtp.us-east-1.amazonaws.com", 587)
     .auth(true)

@@ -52,7 +52,7 @@ lazy val settings = Seq(
     // val _ = (removeOldImage.value, reloginEcr.value)
     // Mark Harrah 20131010 Because of a bug in scala, you have to use dummy names
     // otherwise you could just use val_ =
-    reloginEcr.value
+    val _ = (reloginEcr.value, playStageSecret.value)
     (publish in Docker).value
   }
 )
