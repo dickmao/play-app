@@ -57,6 +57,9 @@ lazy val root = (project in file("."))
     settings,
     libraryDependencies ++= Dependencies.commonDependencies,
     libraryDependencies += filters,
+    mappings in Universal += {
+      baseDirectory.value / "conf" / "production.conf" -> "conf/production.conf"
+    },
     RoutesKeys.routesImport += "play.modules.reactivemongo.PathBindables._",
     NativePackagerKeys.dockerExposedPorts := Seq(9000),
     excludeDependencies += "org.slf4j" % "slf4j-simple",
@@ -65,7 +68,6 @@ lazy val root = (project in file("."))
       import play.sbt.PlayImport._
       val secret = PlayKeys.generateSecret.value
       IO.write(file, s"""include "application.conf"\nplay.crypto.secret="$secret"\n""")
-      mappings in Universal ++= directory(baseDirectory.value / "conf")
     },
     publish in Docker := {
       // val _ = (removeOldImage.value, reloginEcr.value)
