@@ -162,7 +162,8 @@ object Main extends App with Logging {
     for ( ((q, is), j) <- qis.zipWithIndex) {
       if (!is.isEmpty) {
         val formatted = is.map(format_item(_)).mkString("\n\n")
-        val manageAt = s"Manage searches <http://${configuration.getString("eip")}>"
+        val eipOpt = configuration.getString("eip")
+        val manageAt = if (eipOpt.exists(_.trim.nonEmpty)) s"Manage searches http://${eipOpt.get}" else ""
         val f = mailer(Envelope.from("rchiang" `@` "cs.stonybrook.edu")
           .to(u.email.addr)
           .cc("success" `@` "simulator.amazonses.com")
