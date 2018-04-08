@@ -97,6 +97,7 @@
       });
   
       function emailSubmit() {
+        // relying on GET     /mongo/getEmail             controllers.UserController.getEmail(email)
         var email = $('.ui.form input[name=email]').val();
         Cookies.set('email', email);
         $('.ui.form').submit();

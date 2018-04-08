@@ -40,7 +40,7 @@ class UserController @Inject() (environment: play.api.Environment, configuration
       implicit lazy val config = configuration
       collection.map(_.find(Json.obj("email" -> email)).cursor[User]())
         .flatMap(_.collect[List](-1, Cursor.FailOnError[List[User]]())).map { users =>
-        users.headOption map { user => BadRequest(views.html.queries(formWithErrors, user.email, user.id, user.queries)) } getOrElse BadRequest(views.html.queries(formWithErrors, "", BSONObjectID.generate(), List.empty))
+        users.headOption map { user => BadRequest(views.html.queries(formWithErrors, user.email, user.id, user.queries)) } getOrElse BadRequest(views.html.queries(formWithErrors, email, BSONObjectID.generate(), List.empty))
       }.recover {
         case e =>
           e.printStackTrace()
@@ -60,10 +60,10 @@ class UserController @Inject() (environment: play.api.Environment, configuration
     FormDTO.form.bindFromRequest.fold(errorFunction, successFunction)
   }
 
-  def getForCursor(futcursor: Future[Cursor[User]]) = Action.async { implicit request: Request[AnyContent] =>
+  def getForCursor(futcursor: Future[Cursor[User]], email: Option[String]) = Action.async { implicit request: Request[AnyContent] =>
     implicit lazy val config = configuration
     futcursor.flatMap(_.collect[List](-1, Cursor.FailOnError[List[User]]())).map { users =>
-      users.headOption map { user => Ok(views.html.queries(FormDTO.form, user.email, user.id, user.queries)) } getOrElse Ok(views.html.queries(FormDTO.form, "", BSONObjectID.generate(), List.empty))
+      users.headOption map { user => Ok(views.html.queries(FormDTO.form, user.email, user.id, user.queries)) } getOrElse Ok(views.html.queries(FormDTO.form, email.get, BSONObjectID.generate(), List.empty))
     }.recover {
       case e =>
         e.printStackTrace()
@@ -72,10 +72,10 @@ class UserController @Inject() (environment: play.api.Environment, configuration
   }
 
   def getUid(uid: reactivemongo.bson.BSONObjectID) =
-    getForCursor(collection.map(_.find(Json.obj("_id" -> Json.obj("$oid" -> uid.stringify))).cursor[User]()))
+    getForCursor(collection.map(_.find(Json.obj("_id" -> Json.obj("$oid" -> uid.stringify))).cursor[User]()), None)
 
   def getEmail(email: String) = 
-    getForCursor(collection.map(_.find(Json.obj("email" -> email)).cursor[User]()))
+    getForCursor(collection.map(_.find(Json.obj("email" -> email)).cursor[User]()), Some(email))
 
   def delete(
     uid: reactivemongo.bson.BSONObjectID,
