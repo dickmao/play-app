@@ -163,7 +163,7 @@ object Main extends App with Logging {
       if (!is.isEmpty) {
         val formatted = is.map(format_item(_)).mkString("\n\n")
         val eipOpt = configuration.getString("eip")
-        val manageAt = if (eipOpt.exists(_.trim.nonEmpty)) s"Manage searches http://${eipOpt.get}/mongo/getUid/${u.id.stringify}" else ""
+        val manageAt = if (eipOpt.exists(_.trim.nonEmpty)) s"Manage searches http://keeyosk.com/mongo/getUid/${u.id.stringify}" else ""
         val f = mailer(Envelope.from("rchiang" `@` "cs.stonybrook.edu")
           .to(u.email.addr)
           .cc("success" `@` "simulator.amazonses.com")
