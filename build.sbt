@@ -141,7 +141,7 @@ initialCommands in console := """
 |import geocode._
 |val rediscp = new RedisClientPool("localhost", 6379)
 |val redisClient = new RedisClient("localhost", 6379)
-|val nyp = new ReverseGeoCode(new java.io.FileInputStream("/home/dick/play-app/conf/NY.P.tsv"), true)
+|val nyp = new ReverseGeoCode(new java.io.FileInputStream("/home/dick/play-app/conf/NY.icare.tsv"), true)
 |def time[R](block: => R): R = {
 |    val t0 = System.nanoTime()
 |    val result = block    // call-by-name
