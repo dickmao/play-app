@@ -15,7 +15,7 @@
 @helper.input(field, args:_*) { (id, name, value, htmlArgs) =>
     <div class="ui fluid multiple search selection dropdown" @toHtmlArgs(htmlArgs)>
       <input type="hidden" id="@id" name="@name" value="@field.value.getOrElse("")">
-      <div class="default text">e.g., Manhattan</div>
+      <div class="default text">e.g., @{prepop.headOption.getOrElse("Manhattan")}</div>
       <i class="dropdown icon"></i>
       <div class="menu">
       @for( item <- prepop ) {

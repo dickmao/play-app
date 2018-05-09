@@ -61,7 +61,7 @@ lazy val root = (project in file("."))
       baseDirectory.value / "conf" / "production.conf" -> "conf/production.conf"
     },
     RoutesKeys.routesImport += "play.modules.reactivemongo.PathBindables._",
-    NativePackagerKeys.dockerExposedPorts := Seq(9000),
+    NativePackagerKeys.dockerExposedPorts := Seq(9000, 9001),
     excludeDependencies += "org.slf4j" % "slf4j-simple",
     playStageSecret := {
       val file = baseDirectory.value / "conf" / "production.conf"

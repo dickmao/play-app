@@ -45,8 +45,7 @@ object SuccessFunction {
   def successFunction(query: FormDTO)(implicit environment: Environment, configuration: Configuration): Future[List[Map[String, String]]] = {
     val (small, big) = (Set(0,1), Set(2,3,4,5))
     val bedrooms = Set[Int]() ++ (if (query.bedrooms.contains(0)) small else Set()) ++ (if (query.bedrooms.contains(2)) big else Set())
-    implicit val rediscp = new RedisClientPool(configuration.getString("redis.host").getOrElse("redis"), configuration.getInt("redis.port").getOrElse(6379))
-
+    implicit val rediscp = new RedisClientPool(configuration.getString("redis.host").getOrElse("redis"), configuration.getInt("redis.port").getOrElse(6379), 8, configuration.getInt("redis.database").getOrElse(0))
     lazy val popget = ((id2: String) => {
       Future {
         rediscp.withClient {
