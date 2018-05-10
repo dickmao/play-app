@@ -92,7 +92,7 @@ object SuccessFunction {
             _.zrangebyscore("item.index.bedrooms", bedrooms.min.toDouble, true, bedrooms.max.toDouble, true, None).getOrElse(List())
           }
         }
-        nyp = new ReverseGeoCode(environment.resourceAsStream("NY.icare.tsv").get, true)
+        nyp = new ReverseGeoCode(environment.resourceAsStream(configuration.getString("reverse_geocode").getOrElse("NY.icare.tsv")).get, true)
         proximate_and_colocal <- Future {
           rediscp.withClient {
             client => {
