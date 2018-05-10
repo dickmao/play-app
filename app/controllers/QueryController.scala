@@ -24,7 +24,7 @@ import play.api.Logger
   */
 class QueryController @Inject() (environment: play.api.Environment, configuration: play.api.Configuration, val messagesApi: MessagesApi) extends Controller with I18nSupport {
   private val rediscp = new RedisClientPool(configuration.getString("redis.host").getOrElse("redis"),
-    configuration.getInt("redis.port").getOrElse(6379))
+    configuration.getInt("redis.port").getOrElse(6379), 8, configuration.getInt("redis.database").getOrElse(0))
   def Test = Action { implicit request: Request[AnyContent] =>
     Ok(views.html.test(FormDTO.form, configuration))
   }
