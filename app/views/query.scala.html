@@ -56,7 +56,7 @@
 
   @widget(form) {   
     <script>
-      function NonemptyAutocomplete() {
+      function autofill() {
         if (!$('#autocomplete').val()) {
           $('#autocomplete').val('@configuration.getString("dropdown_prepopulate").getOrElse("").split(",").toList.headOption.getOrElse("Manhattan")');
         }
@@ -64,8 +64,15 @@
           $('#checkbeds_0').prop("checked", true);
         }
       }
+      function filled() {
+        return $('#autocomplete').val() &&
+               $("input[name='checkbeds[]']:checked").length &&
+               $('#rentlo').val() &&
+               $('#renthi').val();
+      }
+
     </script>
-    <button onclick="NonemptyAutocomplete()" class="ui primary button">Update</button> 
+    <button onclick="autofill()" class="ui primary button">Update</button> 
   }
   <button class="ui secondary button">Email</button>
   <hr/>
@@ -77,13 +84,11 @@
         $('.ui.form input[name=email]').val(Cookies.get('email'))
       }
   
-      @if(!fieldsById.isEmpty) {
-        $('.my.form :checkbox').change(function() {
-          if ($("input[name='checkbeds[]']:checked").length) {
+      $('.my.form :checkbox').change(function() {
+          if (filled()) {
             $('.my.form').submit();
           }
-        });
-      }
+      });
   
       $('.ui.form').form({
         on: 'blur',
