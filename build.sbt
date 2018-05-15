@@ -90,9 +90,6 @@ lazy val successFunction = (project in file("modules/success-function"))
     mappings in Universal ++= directory(baseDirectory.value / "src" / "main" / "resources"),
     mappings in Universal ++= directory(baseDirectory.value / ".." / ".." / "conf"),
     publish in Docker := {
-      // val _ = (removeOldImage.value, reloginEcr.value)
-      // Mark Harrah 20131010 Because of a bug in scala, you have to use dummy names
-      // otherwise you could just use val_ =
       reloginEcr.value
       (publish in Docker).value
     },
