@@ -4,7 +4,6 @@ import scala.concurrent.duration._
 import scala.concurrent.{ Await, Future }
 import scala.language.postfixOps
 
-import io.swagger.annotations._
 import javax.inject.Inject
 import models._
 import org.joda.time.DateTime
@@ -24,7 +23,6 @@ import reactivemongo.bson.BSONObjectID
 import reactivemongo.play.json._
 import reactivemongo.play.json.collection._
 
-@Api(value = "/api/users", description = "Operations with users")
 class UserController @Inject() (environment: play.api.Environment, configuration: play.api.Configuration, val reactiveMongoApi: ReactiveMongoApi, val messagesApi: MessagesApi) extends Controller with MongoController with ReactiveMongoComponents with I18nSupport {
   /*
    * Note that the `collection` is not a `val`, but a `def`. We do _not_ store
@@ -73,11 +71,7 @@ class UserController @Inject() (environment: play.api.Environment, configuration
     }
   }
 
-  @ApiResponses(Array(
-    new ApiResponse(code = 400, message = "Invalid ID supplied"),
-    new ApiResponse(code = 404, message = "Pet not found")))
-  def getUid(
-    @ApiParam(value = "email of the uid") uid: reactivemongo.bson.BSONObjectID) =
+  def getUid(uid: reactivemongo.bson.BSONObjectID) =
     getForCursor(collection.map(_.find(Json.obj("_id" -> Json.obj("$oid" -> uid.stringify))).cursor[User]()), None)
 
   def getEmail(email: String) = 

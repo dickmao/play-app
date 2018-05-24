@@ -1,7 +1,6 @@
 # Routes
 # This file defines all application routes (Higher priority routes first)
 # ~~~~
-GET     /swagger.json               controllers.ApiHelpController.getResources
 GET     /*path/                     controllers.UserController.untrail(path)
 GET     /                           controllers.QueryController.EmptyQueryAction
 GET     /test                       controllers.QueryController.Test
