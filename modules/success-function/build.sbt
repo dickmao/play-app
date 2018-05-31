@@ -1,5 +1,5 @@
 name := """success-function"""
-shellPrompt in ThisBuild := { state => "[" + Project.extract(state).currentRef.project + "] $ " }
+// shellPrompt in ThisBuild := { state => "[" + Project.extract(state).currentRef.project + "] $ " }
 
 //unmanagedBase := baseDirectory.value / ".." / ".."
 unmanagedResourceDirectories in Compile += baseDirectory.value / ".." / ".." / "conf"
