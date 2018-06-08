@@ -70,7 +70,7 @@ object SuccessFunction {
           }
         }
         i0 <- Future.sequence(geonameids.map(s => popget(s))).transform(l => 
-          l.zipWithIndex.maxBy(_._1)._2, t => t) if !geonameids.isEmpty
+          l.zipWithIndex.maxBy(_._1)._2, t => t)
         p0_fields <- Future {
           rediscp.withClient {
             _.hmget("geoitem." + geonameids(i0), "longitude", "latitude", "admin2code", "featurecode").get
@@ -109,7 +109,8 @@ object SuccessFunction {
     }
 
     val flos = for {
-      ssos <- Future.sequence(fitems.map(f => f.map(Success(_)).recover({ case e => Failure(e)} )).map(_.collect({ case Success(x) => x })))
+      // https://stackoverflow.com/questions/20874186/scala-listfuture-to-futurelist-disregarding-failed-futures
+      ssos <- Future.sequence(fitems.map(f => f.map(Success(_)).recover({ case e => Failure(e) }))).map(_.collect({ case Success(x) => x }))
       los = ssos.flatten.toList
     } yield los
 

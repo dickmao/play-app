@@ -75,6 +75,10 @@ lazy val root = (project in file("."))
       // otherwise you could just use val_ =
       val _ = (reloginEcr.value, playStageSecret.value)
       (publish in Docker).value
+    },
+    publishLocal in Docker := {
+      val _ = (playStageSecret.value)
+      (publishLocal in Docker).value
     }
   )
   .aggregate(successFunction)
