@@ -79,7 +79,10 @@ object SuccessFunction {
         dist = if (p0_fields("featurecode").matches("PPLA.*")) 25 else 1.5
         proximate <- Future {
           rediscp.withClient {
-            _.georadius("item.geohash.coords", p0_fields("longitude"), p0_fields("latitude"), dist, "km", true, false, false, None, None, None, None).getOrElse(List()).flatten
+            client => {
+              //Logger.debug("geoitem.%s %s %s".format(geonameids(i0), p0_fields("longitude"), p0_fields("latitude")))
+              client.georadius("item.geohash.coords", p0_fields("longitude"), p0_fields("latitude"), dist, "km", true, false, false, None, None, None, None).getOrElse(List()).flatten
+            }
           }
         }
         byprice <- Future {
