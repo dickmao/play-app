@@ -59,7 +59,6 @@
     <logger name="application" level="DEBUG" />
     <logger name="com.gargoylesoftware.htmlunit.javascript" level="OFF" />
     <logger name="tests" level="ERROR" />
-  
     <root level="INFO">
         <appender-ref ref="FILE"/>
         <appender-ref ref="SECURITY_FILE"/>
