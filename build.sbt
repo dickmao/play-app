@@ -3,10 +3,10 @@ import com.typesafe.sbt.SbtNativePackager.autoImport.NativePackagerHelper._
 import com.typesafe.sbt.packager.docker._
 
 name := """play-app"""
-lazy val playStageSecret = taskKey[Unit]("Runs playGenerateSecret and puts output in conf as production.conf")
+lazy val playStageSecret = taskKey[(sbt.File, String)]("Runs playGenerateSecret and puts output in conf as production.conf")
+lazy val fakeStageSecret = taskKey[Seq[(sbt.File, String)]]("Fakes playGenerateSecret and puts output in conf as production.conf")
 lazy val removeOldImage = taskKey[Unit]("Remove old image to avoid danglers")
 lazy val reloginEcr = taskKey[Unit]("Renew ECR Authorization Token")
-
 lazy val settings = Seq(
   // logLevel := Level.Debug,
   // git.formattedShaVersion := { (git.gitHeadCommit in ThisBuild).value.map(_.substring(0, 6)) },
@@ -57,9 +57,7 @@ lazy val root = (project in file("."))
     settings,
     libraryDependencies ++= Dependencies.commonDependencies,
     libraryDependencies += filters,
-    mappings in Universal += {
-      baseDirectory.value / "conf" / "production.conf" -> "conf/production.conf"
-    },
+    mappings in Universal += playStageSecret.value,
     RoutesKeys.routesImport += "play.modules.reactivemongo.PathBindables._",
     NativePackagerKeys.dockerExposedPorts := Seq(9000, 9001),
     excludeDependencies += "org.slf4j" % "slf4j-simple",
@@ -68,17 +66,14 @@ lazy val root = (project in file("."))
       import play.sbt.PlayImport._
       val secret = PlayKeys.generateSecret.value
       IO.write(file, s"""include "application.conf"\nplay.crypto.secret="$secret"\n""")
+      file -> "conf/production.conf"
     },
     publish in Docker := {
       // val _ = (removeOldImage.value, reloginEcr.value)
       // Mark Harrah 20131010 Because of a bug in scala, you have to use dummy names
       // otherwise you could just use val_ =
-      val _ = (reloginEcr.value, playStageSecret.value)
+      val _ = (reloginEcr.value)
       (publish in Docker).value
-    },
-    publishLocal in Docker := {
-      val _ = (playStageSecret.value)
-      (publishLocal in Docker).value
     }
   )
   .aggregate(successFunction)
@@ -92,7 +87,12 @@ lazy val successFunction = (project in file("modules/success-function"))
     libraryDependencies ++= Dependencies.commonDependencies,
     libraryDependencies += filters,
     mappings in Universal ++= directory(baseDirectory.value / "src" / "main" / "resources"),
-    mappings in Universal ++= directory(baseDirectory.value / ".." / ".." / "conf"),
+    mappings in Universal ++= fakeStageSecret.value,
+    fakeStageSecret := {
+      val file = baseDirectory.value / ".." / ".." / "conf" / "production.conf"
+      IO.write(file, s"""include "application.conf"\nplay.crypto.secret="success-function"\n""")
+      directory(baseDirectory.value / ".." / ".." / "conf")
+    },
     publish in Docker := {
       reloginEcr.value
       (publish in Docker).value
